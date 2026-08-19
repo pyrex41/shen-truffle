@@ -4,23 +4,22 @@ import com.github.ragnard.shen.klambda.nodes.builtins.BuiltinNode;
 import com.github.ragnard.shen.klambda.runtime.Symbol;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.github.ragnard.shen.klambda.nodes.TrapException;
 
 import java.io.*;
 
 @NodeInfo(shortName = "open")
 public abstract class Open extends BuiltinNode {
-    @Specialization(rewriteOn = FrameSlotTypeException.class)
+    @Specialization
     @CompilerDirectives.TruffleBoundary
-    public Closeable open(String path, Symbol direction) throws FrameSlotTypeException {
+    public Closeable open(String path, Symbol direction) {
         File file = new File(path);
         if (!file.isAbsolute()) {
             MaterializedFrame globals = this.getContext().getGlobalFrame();
-            FrameSlot homeDirectorySlot = globals.getFrameDescriptor().findFrameSlot("*home-directory*");
-            String homeDirectory = (String) globals.getObject(homeDirectorySlot);
+            int homeDirectorySlot = this.getContext().globalSlot("*home-directory*");
+            String homeDirectory = (String) globals.getValue(homeDirectorySlot);
             file = new File(homeDirectory, path);
             //throw new RuntimeException("not implemented");
         }
@@ -35,9 +34,9 @@ public abstract class Open extends BuiltinNode {
                     return new BufferedOutputStream(new FileOutputStream(file));
             }
         } catch (FileNotFoundException e) {
-            throw new RuntimeException("file not found:" + e);
+            throw new TrapException("open: file not found: " + file);
         }
 
-        throw new IllegalArgumentException("invalid direction");
+        throw new TrapException("open: invalid direction");
     }
 }

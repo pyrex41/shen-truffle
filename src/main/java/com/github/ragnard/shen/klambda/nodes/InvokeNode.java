@@ -73,9 +73,4 @@ public abstract class InvokeNode extends ExpressionNode {
         return DispatchNodeGen.create();
     }
 
-    @Override
-    protected boolean isTaggedWith(Class<?> tag) {
-        return tag == StandardTags.CallTag.class || super.isTaggedWith(tag);
-    }
-
 }

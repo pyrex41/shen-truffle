@@ -1,8 +1,12 @@
 package com.github.ragnard.shen.klambda.runtime;
 
 import java.util.ArrayList;
+import com.oracle.truffle.api.interop.*;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-public class Cons {
+@ExportLibrary(InteropLibrary.class)
+public class Cons implements TruffleObject {
 
     public static Cons EMPTY = new Cons(null, null);
 
@@ -16,12 +20,19 @@ public class Cons {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        if (hd != null) sb.append(hd.toString());
-        if (hd != null && tl != null) sb.append(" ");
-        if (tl != null) sb.append(tl.toString());
-        sb.append("]");
+        if (this == EMPTY) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        Object cursor = this;
+        boolean first = true;
+        while (cursor instanceof Cons && cursor != EMPTY) {
+            Cons cell = (Cons) cursor;
+            if (!first) sb.append(' ');
+            sb.append(String.valueOf(cell.hd));
+            first = false;
+            cursor = cell.tl;
+        }
+        if (cursor != EMPTY && cursor != null) sb.append(" | ").append(cursor);
+        sb.append(']');
         return sb.toString();
     }
 
@@ -52,6 +63,35 @@ public class Cons {
 
         return list;
     }
+
+    @ExportMessage public boolean hasArrayElements() { return true; }
+
+    @ExportMessage
+    public boolean isArrayElementReadable(long index) {
+        return index >= 0 && index < getArraySize();
+    }
+
+    @ExportMessage
+    public long getArraySize() {
+        long n = 0; Object p = this;
+        while (p instanceof Cons && p != EMPTY) { n++; p = ((Cons)p).tl; }
+        if (p != null && p != EMPTY) n++;
+        return n;
+    }
+
+    @ExportMessage
+    public Object readArrayElement(long index) throws InvalidArrayIndexException {
+        if (index < 0) throw InvalidArrayIndexException.create(index);
+        long i = 0; Object p = this;
+        while (p instanceof Cons && p != EMPTY) {
+            if (i++ == index) return ((Cons)p).hd;
+            p = ((Cons)p).tl;
+        }
+        if (p != null && p != EMPTY && i == index) return p;
+        throw InvalidArrayIndexException.create(index);
+    }
+
+    @ExportMessage public String toDisplayString(boolean allowSideEffects) { return toString(); }
 }
 
 //public final class Cons extends AbstractCollection {
@@ -141,4 +181,3 @@ public class Cons {
 //        }
 //    }
 //}
-

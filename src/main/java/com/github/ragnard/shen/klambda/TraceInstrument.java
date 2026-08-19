@@ -19,7 +19,7 @@ public final class TraceInstrument extends TruffleInstrument {
         //SourceSectionFilter filter = builder.tagIs(StandardTags.CallTag.class, StandardTags.RootTag.class).build();
         //SourceSectionFilter filter = builder.tagIs(StandardTags.StatementTag.class).build();
         Instrumenter instrumenter = env.getInstrumenter();
-        instrumenter.attachFactory(filter, new TraceEventFactory(env));
+        instrumenter.attachExecutionEventFactory(filter, new TraceEventFactory(env));
     }
 
     private class TraceEventFactory implements ExecutionEventNodeFactory {

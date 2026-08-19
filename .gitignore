@@ -1,3 +1,23 @@
 .DS_Store
 .idea
-target
+# Maven output and assembled JVM/Native Image distributions.
+target/
+*.class
+*.jar
+*.native-image
+
+# IDE metadata.
+*.iml
+.classpath
+.project
+.settings/
+
+# Local GraalVM/Maven caches and test reports.
+.mvn/timing.properties
+*.log
+hs_err_pid*
+replay_pid*
+
+# Local Shen REPL/history and generated Yggdrasil slices.
+.shen-history
+.yggdrasil/

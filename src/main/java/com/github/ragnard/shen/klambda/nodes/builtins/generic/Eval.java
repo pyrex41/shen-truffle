@@ -30,7 +30,7 @@ public abstract class Eval extends BuiltinNode {
         /*if(this.isTail()) {
             root.setIsTail();
         }*/
-        CallTarget callTarget = Truffle.getRuntime().createCallTarget(root);
+        CallTarget callTarget = root.getCallTarget();
 
         return callTarget.call(frame.getArguments()[0]);
     }

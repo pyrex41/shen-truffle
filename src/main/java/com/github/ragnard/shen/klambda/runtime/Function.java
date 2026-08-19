@@ -5,13 +5,17 @@ import com.github.ragnard.shen.klambda.nodes.ExpressionNode;
 import com.github.ragnard.shen.klambda.nodes.RootNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-public class Function {
+@ExportLibrary(InteropLibrary.class)
+public class Function implements TruffleObject {
 
     private final RootCallTarget callTarget;
 
@@ -92,7 +96,7 @@ public class Function {
     }
 
     public static Function create(Language language, FrameDescriptor frameDescriptor, int arity, ExpressionNode body, String name) {
-        return new Function(Truffle.getRuntime().createCallTarget(new RootNode(language, frameDescriptor, body, name)), arity);
+        return new Function(new RootNode(language, frameDescriptor, body, name).getCallTarget(), arity);
     }
 
     public void setForm(Object form) {
@@ -100,8 +104,17 @@ public class Function {
     }
 
     @Override
+    @TruffleBoundary
     public String toString() {
-        return String.format("<Function id=%s name=%s arity=%d form=%s curried=[%s]>", Integer.toHexString(hashCode()), this.name, this.arity, this.form,
-                String.join(",", Arrays.stream(this.curriedArgumentValues).map(x -> x.toString()).collect(Collectors.toList())));
+        return this.name == null ? "<function>" : "(fn " + this.name + ")";
     }
+
+    @ExportMessage public boolean isExecutable() { return true; }
+
+    @ExportMessage
+    public Object execute(Object... arguments) {
+        return callTarget.call(packArguments(arguments));
+    }
+
+    @ExportMessage @TruffleBoundary public String toDisplayString(boolean allowSideEffects) { return toString(); }
 }

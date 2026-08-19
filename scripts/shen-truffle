@@ -1,47 +1,44 @@
 #!/usr/bin/env bash
+# Launch the assembled shen-truffle distribution, or the Maven classes tree
+# while developing.  Keep this wrapper free of machine-specific GraalVM paths:
+# use JAVA_HOME (or JAVACMD) to select the JVM.
+set -euo pipefail
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT="$DIR/.."
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
+DIST="$ROOT/target/shen-truffle"
 
-JAVA=/Users/ragnardahlen/projects/graalvm/labsjdk1.8.0_121-jvmci-0.26/bin/java
-#JAVA=/Users/ragnardahlen/projects/graalvm/labsjdk1.8.0_121-jvmci-0.29/bin/java
-GRAAL_HOME=/Users/ragnardahlen/projects/graalvm/graalvm-0.24
+if [[ -n "${JAVACMD:-}" ]]; then
+  JAVA="$JAVACMD"
+elif [[ -n "${JAVA_HOME:-}" ]]; then
+  JAVA="$JAVA_HOME/bin/java"
+else
+  JAVA="java"
+fi
 
-"$JAVA" -server \
-        -Xss16M \
-        -XX:+UnlockExperimentalVMOptions \
-        -XX:+EnableJVMCI \
-        -d64 \
-        -Djvmci.class.path.append=$GRAAL_HOME/lib/graal/graal.jar \
-        -Xbootclasspath/a:$GRAAL_HOME/lib/truffle/truffle-api.jar \
-        -Dgraal.TruffleCompilationExceptionsAreFatal=true \
-        -cp $ROOT/target/classes \
-        com.github.ragnard.shen.Shen "$@"
+# Maven assembly may provide a native launcher.  Prefer it so the same script
+# works with a relocatable distribution produced by Yggdrasil.
+for launcher in "$DIST/bin/shen-truffle" "$DIST/bin/shen-truffle.exe"; do
+  if [[ -x "$launcher" ]]; then
+    exec "$launcher" "$@"
+  fi
+done
 
+for jar in "$DIST/shen-truffle.jar" "$ROOT/target/shen-truffle.jar"; do
+  if [[ -f "$jar" ]]; then
+    exec "$JAVA" -Xss16m --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow ${JAVA_OPTS:-} -jar "$jar" "$@"
+  fi
+done
 
-GRAAL_HOME=/Users/ragnardahlen/projects/graalvm/graalvm-0.24
+# Development fallback: Maven's classes directory plus dependencies.  The
+# modern build writes a classpath file when assembling; use it if available.
+if [[ -f "$DIST/classpath.txt" ]]; then
+  CP="$(<"$DIST/classpath.txt")"
+elif [[ -d "$ROOT/target/classes" ]]; then
+  CP="$ROOT/target/classes:$ROOT/target/dependency/*"
+else
+  echo "shen-truffle is not built; run: mvn package" >&2
+  exit 127
+fi
 
-JAVACMD=${JAVACMD:=$GRAAL_HOME/bin/java}
-
-PROGRAM_ARGS=""
-JAVA_ARGS="-Dgraal.TruffleCompilationExceptionsAreFatal=true"
-
-
-
-#        -Dgraal.Dump= -Dgraal.MethodFilter=Truffle.* -Dgraal.TruffleBackgroundCompilation=false -Dgraal.TraceTruffleCompilation=true -Dgraal.TraceTruffleCompilationDetails=true \
-#        -Dgraal.Dump= -Dgraal.MethodFilter=Truffle.* -Dgraal.TruffleBackgroundCompilation=false -Dgraal.TraceTruffleCompilation=true -Dgraal.TraceTruffleCompilationDetails=true \
-
-
-# "$GRAAL_HOME"/bin/java \
-#             -Xss16M \
-#            -Dgraal.TruffleBackgroundCompilation=true \
-#            -cp target/classes \
-#            com.github.ragnard.shen.Shen "$@"
-
-# "$GRAAL_HOME"/bin/java \
-#              -server \
-#              -Xss16M \
-#              -cp target/classes \
-#              -Dgraal.TruffleCompilationExceptionsAreFatal=true \
-#              com.github.ragnard.shen.Shen "$@"
-
+exec "$JAVA" -Xss16m --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow ${JAVA_OPTS:-} -cp "$CP" com.github.ragnard.shen.Shen "$@"

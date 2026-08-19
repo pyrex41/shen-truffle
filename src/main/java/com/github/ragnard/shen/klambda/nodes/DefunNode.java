@@ -20,7 +20,7 @@ public class DefunNode extends ExpressionNode {
     @Override
     public Object executeGeneric(VirtualFrame frame) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        getRootNode().getLanguage(Language.class).getContextReference().get().registerFunction(this.name.getName(), this.function);
+        Language.CONTEXT_REFERENCE.get(this).registerFunction(this.name.getName(), this.function);
         return this.name;
     }
 }

@@ -27,7 +27,7 @@ public class TrapErrorNode extends ExpressionNode {
     public Object executeGeneric(VirtualFrame frame) {
         try {
             return this.bodyNode.executeGeneric(frame);
-        } catch (RuntimeException e) {
+        } catch (TrapException e) {
            Function handler = (Function) this.handlerNode.executeGeneric(frame);
             return call(frame, handler.getCallTarget(), new Object[]{handler.getLexicalScope(), e});
         }

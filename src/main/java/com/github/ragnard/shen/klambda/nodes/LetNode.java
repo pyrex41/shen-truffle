@@ -2,17 +2,16 @@ package com.github.ragnard.shen.klambda.nodes;
 
 import com.github.ragnard.shen.klambda.nodes.local.WriteLocalVariableNodeGen;
 import com.github.ragnard.shen.klambda.runtime.Symbol;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class LetNode extends ExpressionNode {
 
-    private final FrameSlot slot;
+    private final int slot;
 
     @Child
     private ExpressionNode bodyNode;
 
-    public LetNode(FrameSlot slot, ExpressionNode valueNode, ExpressionNode bodyNode) {
+    public LetNode(int slot, ExpressionNode valueNode, ExpressionNode bodyNode) {
         this.slot = slot;
         this.bodyNode = DoNode.create(WriteLocalVariableNodeGen.create(valueNode, slot), bodyNode);
     }

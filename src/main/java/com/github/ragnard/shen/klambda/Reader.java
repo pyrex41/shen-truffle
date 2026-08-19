@@ -71,6 +71,19 @@ public class Reader {
             int ch = r.read();
             if (ch == -1) throw new EOFException();
             if (ch == '"') break;
+            if (ch == '\\') {
+                int escaped = r.read();
+                if (escaped == -1) throw new EOFException();
+                switch (escaped) {
+                    case 'n': sb.append('\n'); break;
+                    case 'r': sb.append('\r'); break;
+                    case 't': sb.append('\t'); break;
+                    case '"': sb.append('"'); break;
+                    case '\\': sb.append('\\'); break;
+                    default: sb.append((char) escaped); break;
+                }
+                continue;
+            }
             sb.append((char)ch);
         }
         return sb.toString();
