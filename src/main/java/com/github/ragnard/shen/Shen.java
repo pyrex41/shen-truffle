@@ -1,118 +1,107 @@
 package com.github.ragnard.shen;
 
-
-import com.github.ragnard.shen.klambda.Language;
-import com.oracle.truffle.api.source.Source;
+import org.graalvm.polyglot.Value;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Shen {
-
-    private static String[] SOURCES = new String[]{
-            "toplevel.kl",
-            "core.kl",
-            "sys.kl",
-            "sequent.kl",
-            "yacc.kl",
-            "reader.kl",
-            "prolog.kl",
-            "track.kl",
-            "load.kl",
-            "writer.kl",
-            "macros.kl",
-            "declarations.kl",
-            "types.kl",
-            "t-star.kl",
-    };
-
-    private final KLambda kl;
-
-    public Shen() {
-        kl = new KLambda(System.in, System.out);
-
-        for (String sourceName : SOURCES) {
-            System.out.println("Loading " + sourceName);
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(Shen.class.getResourceAsStream("/klambda/" + sourceName)))) {
-                Source source = Source.newBuilder(reader)
-                        .name(sourceName)
-                        .mimeType(Language.MIME_TYPE)
-                        .build();
-
-                kl.eval(source);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (RuntimeException e) {
-                System.out.println("UGH: " + e);
-                e.printStackTrace();
-                throw e;
-            }
-        }
-    }
-
-    public Object eval(String expr) {
-        return kl.eval(expr);
-    }
+/** Command-line entry point for Shen 41.2. */
+public final class Shen {
+    private final ShenRuntime embedded;
+    public Shen() { embedded = ShenRuntime.builder().build(); }
+    public Object eval(String source) { return embedded.eval(source); }
 
     public static void main(String[] args) {
-
-        Shen shen = new Shen();
-
-        boolean startToplevel = true;
-
-        for(int i = 0; i < args.length; i++) {
-            switch (args[i]) {
-                case "-v":
-                case "--version":
-                    System.out.println("version");
-                    System.exit(0);
-                case "-h":
-                case "--help":
-                    System.out.println("help");
-                    System.exit(0);
-                case "-e":
-                case "--eval":
-                    if (i+1 >= args.length) {
-                        System.out.println("missing argument to --eval");
-                        System.exit(1);
-                    }
-                    startToplevel = false;
-                    shen.eval(args[i+1]);
-                    i += 1;
-                    continue;
-                case "-l":
-                case "--load":
-                    if (i+1 >= args.length) {
-                        System.out.println("missing argument to --load");
-                        System.exit(1);
-                    }
-                    startToplevel = false;
-                    shen.eval(String.format("(load \"%s\")", args[i+1]));
-                    i += 1;
-                    continue;
-            }
-
+        if (args.length > 0 && ("--help".equals(args[0]) || "-h".equals(args[0]))) {
+            usage();
+            return;
         }
-
-        if(startToplevel) {
-            shen.eval("(shen.shen)");
+        if (args.length > 0 && ("--version".equals(args[0]) || "-v".equals(args[0]))) {
+            version();
+            return;
         }
-
+        try (ShenRuntime runtime = ShenRuntime.builder().build()) {
+            int status = run(runtime, args);
+            if (status != 0) System.exit(status);
+        } catch (Throwable t) {
+            t.printStackTrace(System.err);
+            System.exit(1);
+        }
     }
 
+    static int run(ShenRuntime rt, String[] argv) throws IOException {
+        if (argv.length == 0) return repl(rt);
+        if ("--help".equals(argv[0]) || "-h".equals(argv[0])) { usage(); return 0; }
+        if ("--version".equals(argv[0]) || "-v".equals(argv[0])) {
+            version();
+            return 0;
+        }
+        if ("repl".equals(argv[0])) return repl(rt);
+        if ("script".equals(argv[0])) {
+            if (argv.length < 2) return error("missing script file");
+            setArgv(rt, argv, 1);
+            rt.eval("(load \"" + quote(argv[1]) + "\")");
+            return 0;
+        }
+
+        // `eval` accepts ordered operations. Legacy top-level -e/-l are aliases.
+        int i = 0; boolean quiet = false; boolean did = false;
+        while (i < argv.length) {
+            String a = argv[i++];
+            if ("eval".equals(a)) continue;
+            if ("-q".equals(a) || "--quiet".equals(a)) { rt.eval("(set *hush* true)"); quiet = true; continue; }
+            if ("-e".equals(a) || "--eval".equals(a)) {
+                if (i >= argv.length) return error("missing argument to " + a);
+                Value v = rt.eval(argv[i++]);
+                if (!quiet) print(v);
+                did = true; continue;
+            }
+            if ("-l".equals(a) || "--load".equals(a)) {
+                if (i >= argv.length) return error("missing argument to " + a);
+                rt.load(Path.of(argv[i++])); did = true; continue;
+            }
+            if ("--help".equals(a)) { usage(); return 0; }
+            return error("invalid argument: " + a);
+        }
+        return did ? 0 : repl(rt);
+    }
+
+    private static int repl(ShenRuntime rt) throws IOException {
+        // A host-side loop gives a deterministic clean EOF for pipes and scripts.
+        BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        while ((line = r.readLine()) != null) {
+            if (line.trim().isEmpty()) continue;
+            print(rt.eval(line));
+        }
+        return 0;
+    }
+
+    private static void setArgv(ShenRuntime rt, String[] args, int fileIndex) {
+        List<String> values = new ArrayList<>();
+        for (int i = fileIndex; i < args.length; i++) values.add(args[i]);
+        StringBuilder expr = new StringBuilder("(set *argv* ");
+        for (int i = 0; i < values.size(); i++) expr.append("(cons \"").append(quote(values.get(i))).append("\" ");
+        expr.append("()");
+        for (int i = 0; i < values.size(); i++) expr.append(')');
+        expr.append(')');
+        rt.eval(expr.toString());
+    }
+
+    private static void print(Value v) { if (v != null && !v.isNull()) System.out.println(v); }
+    private static String quote(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }
+    private static int error(String s) { System.err.println("ERROR: " + s); return 1; }
+    private static void version() {
+        System.out.println("Shen 41.2 (shen-truffle, GraalVM " + System.getProperty("java.vm.version") + ")");
+    }
     private static void usage() {
-        System.out.println("usage");
-//        "Shen 20.1\n" +
-//                "Shen CL 2.1\n" +
-//                "\n" +
-//                "Usage: truffleshen [OPTIONS...]\n" +
-//                "  -v, --version       : Prints Shen, shen-cl version numbers and exits\n" +
-//                "  -h, --help          : Shows this help and exits\n" +
-//                "  -e, --eval <expr>   : Evaluates expr and prints result\n" +
-//                "  -l, --load <file>   : Reads and evaluates file\n" +
-//                "\n" +
-//                "Evaluates options in order\n" +
-//                "Starts the REPL if no eval/load options specified"
+        System.out.println("Usage: shen-truffle [--help|--version] [repl|script FILE [ARGS...]|eval OPTIONS]");
+        System.out.println("  -e, --eval EXPR   evaluate expression (repeatable, ordered)");
+        System.out.println("  -l, --load FILE   load Shen source file (repeatable, ordered)");
+        System.out.println("  -q, --quiet       suppress eval output");
     }
 }

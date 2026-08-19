@@ -48,11 +48,6 @@ public class RootNode extends com.oracle.truffle.api.nodes.RootNode {
     }
 
     @Override
-    protected boolean isTaggedWith(Class<?> tag) {
-        return tag == StandardTags.RootTag.class || super.isTaggedWith(tag);
-    }
-
-    @Override
     public String toString() {
         return this.name;
     }

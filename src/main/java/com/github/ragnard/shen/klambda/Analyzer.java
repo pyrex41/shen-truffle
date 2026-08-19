@@ -9,8 +9,8 @@ import com.github.ragnard.shen.klambda.nodes.local.WriteLocalVariableNodeGen;
 import com.github.ragnard.shen.klambda.runtime.Cons;
 import com.github.ragnard.shen.klambda.runtime.Function;
 import com.github.ragnard.shen.klambda.runtime.Symbol;
+import com.github.ragnard.shen.klambda.runtime.Vector;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.SourceSection;
 
 import java.util.*;
@@ -28,26 +28,26 @@ public class Analyzer {
 
         static class Local {
             private final String name;
-            private final FrameSlot frameSlot;
+            private final int frameSlot;
 
-            Local(String name, FrameSlot frameSlot) {
+            Local(String name, int frameSlot) {
                 this.name = name;
                 this.frameSlot = frameSlot;
             }
         }
 
         static class Lexical {
-            public final FrameSlot frameSlot;
+            public final int frameSlot;
             public final int depth;
 
-            Lexical(FrameSlot frameSlot, int depth) {
+            Lexical(int frameSlot, int depth) {
                 this.frameSlot = frameSlot;
                 this.depth = depth;
             }
         }
 
         private final Env parent;
-        private final FrameDescriptor frameDescriptor;
+        private final FrameDescriptor.Builder frameBuilder;
         private final LinkedList<Local> locals;
 
         Env() {
@@ -55,12 +55,12 @@ public class Analyzer {
         }
 
         Env(Env parent) {
-            this(parent, new FrameDescriptor(), new LinkedList<>());
+            this(parent, FrameDescriptor.newBuilder(), new LinkedList<>());
         }
 
-        Env(Env parent, FrameDescriptor frameDescriptor, LinkedList<Local> locals) {
+        Env(Env parent, FrameDescriptor.Builder frameBuilder, LinkedList<Local> locals) {
             this.parent = parent;
-            this.frameDescriptor = frameDescriptor;
+            this.frameBuilder = frameBuilder;
             this.locals = locals;
         }
 
@@ -70,12 +70,12 @@ public class Analyzer {
 
         public Env fresh(String name) {
             LinkedList<Local> locals = new LinkedList<>(this.locals);
-            FrameSlot slot = this.frameDescriptor.addFrameSlot(name + "_" + counter.incrementAndGet());
+            int slot = frameBuilder.addSlot(com.oracle.truffle.api.frame.FrameSlotKind.Object, name, null);
             locals.addFirst(new Local(name, slot));
-            return new Env(this.parent, this.frameDescriptor, locals);
+            return new Env(this.parent, this.frameBuilder, locals);
         }
 
-        public FrameSlot getLocal(String name) {
+        public Integer getLocal(String name) {
             for(Local local : this.locals) {
                 if (local.name.equals(name)) {
                     return local.frameSlot;
@@ -87,7 +87,7 @@ public class Analyzer {
         public Lexical getLexical(String name) {
             int depth = 1;
             for(Env env = this.parent; env != null; env = env.parent, depth++) {
-                FrameSlot slot = env.getLocal(name);
+                Integer slot = env.getLocal(name);
                 if (slot != null) {
                     return new Lexical(slot, depth);
                 }
@@ -112,7 +112,7 @@ public class Analyzer {
 
         //NodeUtil.printCompactTree(System.out, expr);
 
-        return new RootNode(language, s.frameDescriptor, expr);
+        return new RootNode(language, s.frameBuilder.build(), expr);
     }
 
     public ExpressionNode analyze(Env e, Object form) {
@@ -128,13 +128,15 @@ public class Analyzer {
             return analyzeList(e, (List)form);
         } else if (form instanceof Cons) {
             return analyzeList(e, ((Cons)form).toList());
+        } else if (form instanceof Vector) {
+            return new VectorNode((Vector) form);
         } else {
             throw new RuntimeException("cannot analyze form: " + form.toString());
         }
     }
 
     private ExpressionNode analyzeSymbol(Env e, Symbol symbol) {
-        FrameSlot slot = e.getLocal(symbol.getName());
+        Integer slot = e.getLocal(symbol.getName());
         if (slot != null) {
             return ReadLocalVariableNodeGen.create(slot);
         }
@@ -189,7 +191,7 @@ public class Analyzer {
                 Symbol variableName = (Symbol)forms.get(1);
                 ExpressionNode valueNode = analyze(e, forms.get(2));
                 Env letEnv = e.fresh(variableName.getName());
-                FrameSlot letSlot = letEnv.getLocal(variableName.getName());
+                Integer letSlot = letEnv.getLocal(variableName.getName());
                 return Optional.of(new LetNode(letSlot, valueNode, analyze(letEnv, forms.get(3))));
             case "defun":
                 // (defun NAME (ARGS) BODY-EXPR))
@@ -205,6 +207,10 @@ public class Analyzer {
             case "trap-error":
                 // (trap-error BODY-EXPR HANDLER)
                 return Optional.of(new TrapErrorNode(analyze(e, forms.get(1)), FunctionExpressionNodeGen.create(analyze(e, forms.get(2)))));
+            case "type":
+                // KLambda type annotations are operationally transparent.
+                if (forms.size() != 3) break;
+                return Optional.of(analyze(e, forms.get(1)));
         }
 
         return Optional.empty();
@@ -247,7 +253,7 @@ public class Analyzer {
 
         for(int i = 0; i < arguments.size(); i++) {
             e = e.fresh(arguments.get(i).getName());
-            FrameSlot argumentSlot = e.getLocal(arguments.get(i).getName());
+                Integer argumentSlot = e.getLocal(arguments.get(i).getName());
             body.add(WriteLocalVariableNodeGen.create(new ReadArgumentNode(i+1), argumentSlot));
         }
 
@@ -256,7 +262,7 @@ public class Analyzer {
         DoNode bodyNode = DoNode.create(body.toArray(new ExpressionNode[body.size()]));
         bodyNode.setIsTail();
 
-        Function function = Function.create(this.language, e.frameDescriptor, arguments.size(), bodyNode, name);
+        Function function = Function.create(this.language, e.frameBuilder.build(), arguments.size(), bodyNode, name);
         function.setForm(bodyForm);
 
         return function;

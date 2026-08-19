@@ -1,0 +1,8 @@
+#!/bin/sh
+# Stage-2 builder. Build the project first (mvn package), then invoke this
+# wrapper from Yggdrasil's builders.json with SHAKEN and OUT arguments.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+CP=${SHEN_TRUFFLE_CLASSPATH:-"$ROOT/target/classes"}
+exec "${JAVA_HOME:+$JAVA_HOME/bin/}java" ${JAVA_OPTS:-} -cp "$CP" \
+  com.github.ragnard.shen.tools.YggdrasilBuilder "$@"

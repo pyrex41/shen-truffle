@@ -8,21 +8,55 @@
     <artifactId>shen-truffle</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.release>25</maven.compiler.release>
+        <truffle.version>25.0.2</truffle.version>
+        <truffle.runtime.scope>runtime</truffle.runtime.scope>
+        <junit.version>5.12.2</junit.version>
+        <shen.certify>false</shen.certify>
+    </properties>
+
     <dependencies>
         <dependency>
-            <groupId>com.oracle.truffle</groupId>
+            <groupId>org.graalvm.truffle</groupId>
             <artifactId>truffle-api</artifactId>
-            <version>0.25</version>
+            <version>${truffle.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.oracle.truffle</groupId>
+            <groupId>org.graalvm.truffle</groupId>
+            <artifactId>truffle-runtime</artifactId>
+            <version>${truffle.version}</version>
+            <scope>${truffle.runtime.scope}</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.truffle</groupId>
             <artifactId>truffle-dsl-processor</artifactId>
-            <version>0.25</version>
+            <version>${truffle.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>polyglot</artifactId>
+            <version>${truffle.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -32,11 +66,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    </properties>
 
     <profiles>
         <profile>
@@ -48,8 +77,41 @@
         <profile>
             <id>shen</id>
             <properties>
-                <testcase.groups>com.github.ragnar.shen.tests.Shen</testcase.groups>
+                <shen.certify>true</shen.certify>
             </properties>
+        </profile>
+        <profile>
+            <id>native</id>
+            <properties>
+                <truffle.runtime.scope>provided</truffle.runtime.scope>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>0.11.3</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>native-image</id>
+                                <phase>package</phase>
+                                <goals><goal>compile-no-fork</goal></goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <imageName>shen-truffle-native</imageName>
+                            <mainClass>com.github.ragnard.shen.Shen</mainClass>
+                            <buildArgs>
+                                <buildArg>--initialize-at-build-time=com.github.ragnard.shen.klambda</buildArg>
+                                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                                <buildArg>-H:IncludeResources=(klambda|stlib|extensions)/.*</buildArg>
+                                <buildArg>-H:-UnlockExperimentalVMOptions</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 
@@ -57,20 +119,119 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.8.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-runtime-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>copy-dependencies</goal></goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>${project.build.directory}/dependency</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.14.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <release>${maven.compiler.release}</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.graalvm.truffle</groupId>
+                            <artifactId>truffle-dsl-processor</artifactId>
+                            <version>${truffle.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.20</version>
-                <!--<configuration>
-                    <groups>com.github.ragnard.shen.tests.categories.Unit</groups>
-                </configuration>-->
+                <version>3.5.3</version>
+                <configuration>
+                    <argLine>-Xss16m --enable-native-access=ALL-UNNAMED</argLine>
+                    <systemPropertyVariables>
+                        <shen.certify>${shen.certify}</shen.certify>
+                    </systemPropertyVariables>
+                    <!-- These suites exercise the removed PolyglotEngine API; retain
+                         their sources for historical reference but run the modern
+                         JUnit 5 contract/certification tests instead. -->
+                    <excludes>
+                        <exclude>**/KLambdaTest.java</exclude>
+                        <exclude>**/ShenTest.java</exclude>
+                        <exclude>**/ReadKLambdaFilesTest.java</exclude>
+                        <exclude>**/MicrobenchmarkTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>launcher-jar</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <outputFile>${project.build.directory}/shen-truffle.jar</outputFile>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.github.ragnard.shen.Shen</mainClass>
+                                    <manifestEntries>
+                                        <Multi-Release>true</Multi-Release>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>yggdrasil-builder-jar</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <outputFile>${project.build.directory}/yggdrasil-builder.jar</outputFile>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.github.ragnard.shen.tools.YggdrasilBuilder</mainClass>
+                                    <manifestEntries>
+                                        <Multi-Release>true</Multi-Release>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>assemble-distribution</id>
+                        <phase>package</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}/shen-truffle/bin"/>
+                                <mkdir dir="${project.build.directory}/shen-truffle/lib"/>
+                                <copy file="${project.build.directory}/shen-truffle.jar" tofile="${project.build.directory}/shen-truffle/lib/shen-truffle.jar"/>
+                                <copy file="${project.basedir}/src/main/dist/bin/shen-truffle" todir="${project.build.directory}/shen-truffle/bin"/>
+                                <copy file="${project.basedir}/src/main/dist/bin/shen-truffle.cmd" todir="${project.build.directory}/shen-truffle/bin"/>
+                                <chmod file="${project.build.directory}/shen-truffle/bin/shen-truffle" perm="755" osfamily="unix"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

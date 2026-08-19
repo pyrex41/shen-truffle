@@ -26,7 +26,7 @@ public abstract class FunctionExpressionNode extends ExpressionNode {
     }
 
     protected Context.RegisteredFunction resolveFunction(Symbol functionName) {
-        Context context = getRootNode().getLanguage(Language.class).getContextReference().get();
+        Context context = Language.CONTEXT_REFERENCE.get(this);
         Context.RegisteredFunction function = context.lookupFunction(functionName.getName());
         if (function == null) {
             throw new RuntimeException("function not found: " + functionName);
@@ -35,4 +35,3 @@ public abstract class FunctionExpressionNode extends ExpressionNode {
     }
 
 }
-

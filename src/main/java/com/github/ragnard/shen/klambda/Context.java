@@ -11,12 +11,12 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Context {
 
@@ -34,10 +34,16 @@ public class Context {
     }
 
     private final HashMap<String, RegisteredFunction> functions;
+    private final Map<String, Integer> globalSlots = new HashMap<>();
+    private int nextGlobalSlot;
 
     public Context(Language language, TruffleLanguage.Env env) {
         this.language = language;
-        this.globalFrame = Truffle.getRuntime().createMaterializedFrame(null);
+        FrameDescriptor.Builder builder = FrameDescriptor.newBuilder();
+        // Global slots cannot be added after the materialized frame is created.
+        // Reserve enough for the kernel, StLib, and sizeable embedded programs.
+        for (int i = 0; i < 4096; i++) builder.addSlot(com.oracle.truffle.api.frame.FrameSlotKind.Object, null, null);
+        this.globalFrame = Truffle.getRuntime().createMaterializedFrame(null, builder.build());
         this.functions = new HashMap<>();
 
         set("*language*", "Java");
@@ -62,8 +68,12 @@ public class Context {
     }
 
     private void set(String name, Object value) {
-        FrameSlot slot = this.globalFrame.getFrameDescriptor().addFrameSlot(name);
+        int slot = globalSlot(name);
         this.globalFrame.setObject(slot, value);
+    }
+
+    public int globalSlot(String name) {
+        return globalSlots.computeIfAbsent(name, ignored -> nextGlobalSlot++);
     }
 
     public void registerFunction(String name, Function f) {
@@ -96,7 +106,7 @@ public class Context {
         //builtinBodyNode.setSourceSection(srcSection);
 
         RootNode rootNode = new RootNode(language, new FrameDescriptor(), builtinBodyNode, name);
-        Function f = new Function(Truffle.getRuntime().createCallTarget(rootNode), argumentCount);
+        Function f = new Function(rootNode.getCallTarget(), argumentCount);
         f.setName(name);
 
         registerFunction(name, f);

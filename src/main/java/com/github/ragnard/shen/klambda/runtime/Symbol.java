@@ -1,8 +1,13 @@
 package com.github.ragnard.shen.klambda.runtime;
 
 import java.util.concurrent.ConcurrentHashMap;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-public class Symbol {
+@ExportLibrary(InteropLibrary.class)
+public class Symbol implements TruffleObject {
 
     private static final ConcurrentHashMap<String, Symbol> symbols = new ConcurrentHashMap<>();
 
@@ -30,6 +35,7 @@ public class Symbol {
         return b ? TRUE : FALSE;
     }
 
+    @ExportMessage
     public boolean asBoolean() {
         if (this == TRUE) {
             return true;
@@ -39,6 +45,12 @@ public class Symbol {
             throw new RuntimeException("asBoolean: " + this);
         }
     }
+
+    @ExportMessage
+    public boolean isBoolean() { return this == TRUE || this == FALSE; }
+
+    @ExportMessage
+    public String toDisplayString(boolean allowSideEffects) { return name; }
 
     @Override
     public String toString() {

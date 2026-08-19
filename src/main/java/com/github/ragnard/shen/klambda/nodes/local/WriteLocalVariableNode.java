@@ -44,49 +44,19 @@ import com.github.ragnard.shen.klambda.nodes.ExpressionNode;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 // From SimpleLanguage
 
 @NodeChild("valueNode")
-@NodeField(name = "slot", type = FrameSlot.class)
+@NodeField(name = "slot", type = int.class)
 public abstract class WriteLocalVariableNode extends ExpressionNode {
 
-    protected abstract FrameSlot getSlot();
+    protected abstract int getSlot();
 
-    @Specialization(guards = "isLongOrIllegal(frame)")
-    protected long writeLong(VirtualFrame frame, long value) {
-        getSlot().setKind(FrameSlotKind.Long);
-
-        frame.setLong(getSlot(), value);
-        return value;
-    }
-
-    @Specialization(guards = "isBooleanOrIllegal(frame)")
-    protected boolean writeBoolean(VirtualFrame frame, boolean value) {
-        getSlot().setKind(FrameSlotKind.Boolean);
-
-        frame.setBoolean(getSlot(), value);
-        return value;
-    }
-
-    @Specialization(contains = {"writeLong", "writeBoolean"})
+    @Specialization
     protected Object write(VirtualFrame frame, Object value) {
-        getSlot().setKind(FrameSlotKind.Object);
-
         frame.setObject(getSlot(), value);
         return value;
-    }
-
-    // NOTE: frame param is important below
-
-    protected boolean isLongOrIllegal(@SuppressWarnings("unused") VirtualFrame frame) {
-        return getSlot().getKind() == FrameSlotKind.Long || getSlot().getKind() == FrameSlotKind.Illegal;
-    }
-
-    protected boolean isBooleanOrIllegal(@SuppressWarnings("unused") VirtualFrame frame) {
-        return getSlot().getKind() == FrameSlotKind.Boolean || getSlot().getKind() == FrameSlotKind.Illegal;
     }
 }

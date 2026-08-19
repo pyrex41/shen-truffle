@@ -6,7 +6,7 @@ import com.oracle.truffle.api.source.Source;
 
 public class Builtins {
 
-    public static final Source BUILTIN_SOURCE = Source.newBuilder("").name("primitive").mimeType(Language.MIME_TYPE).build();
+    public static final Source BUILTIN_SOURCE = Source.newBuilder(Language.ID, "", "primitive").build();
 
     public static NodeFactory[] NODE_FACTORIES = new NodeFactory[] {
 
@@ -54,6 +54,8 @@ public class Builtins {
             com.github.ragnard.shen.klambda.nodes.builtins.stream.CloseFactory.getInstance(),
             com.github.ragnard.shen.klambda.nodes.builtins.stream.ReadByteFactory.getInstance(),
             com.github.ragnard.shen.klambda.nodes.builtins.stream.WriteByteFactory.getInstance(),
+            com.github.ragnard.shen.klambda.nodes.builtins.stream.CharStInputFactory.getInstance(),
+            com.github.ragnard.shen.klambda.nodes.builtins.stream.CharStOutputFactory.getInstance(),
 
             // time
             com.github.ragnard.shen.klambda.nodes.builtins.time.GetTimeFactory.getInstance(),

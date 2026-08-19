@@ -1,0 +1,6 @@
+# Vendored Shen sources preserve upstream whitespace, including multiline
+# string content and historical tab indentation.
+src/main/resources/klambda/*.kl whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+src/main/resources/extensions/* whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+src/main/resources/stlib/** whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+src/test/resources/kernel-tests/** whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab

@@ -44,45 +44,35 @@ import com.github.ragnard.shen.klambda.nodes.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 // From SimpleLanguage
 
-@NodeField(name = "slot", type = FrameSlot.class)
+@NodeField(name = "slot", type = int.class)
 public abstract class ReadLocalVariableNode extends ExpressionNode {
 
-    protected abstract FrameSlot getSlot();
+    protected abstract int getSlot();
 
     @Specialization(guards = "isLong(frame)")
     protected long readLong(VirtualFrame frame) {
-        return FrameUtil.getLongSafe(frame, getSlot());
+        return frame.getLong(getSlot());
     }
 
     @Specialization(guards = "isBoolean(frame)")
     protected boolean readBoolean(VirtualFrame frame) {
-        return FrameUtil.getBooleanSafe(frame, getSlot());
+        return frame.getBoolean(getSlot());
     }
 
-    @Specialization(contains = {"readLong", "readBoolean"})
+    @Specialization(replaces = {"readLong", "readBoolean"})
     protected Object readObject(VirtualFrame frame) {
-        if (!frame.isObject(getSlot())) {
-            CompilerDirectives.transferToInterpreter();
-            Object result = frame.getValue(getSlot());
-            frame.setObject(getSlot(), result);
-            return result;
-        }
-
-        return FrameUtil.getObjectSafe(frame, getSlot());
+        return frame.getValue(getSlot());
     }
 
     protected boolean isLong(@SuppressWarnings("unused") VirtualFrame frame) {
-        return getSlot().getKind() == FrameSlotKind.Long;
+        return frame.isLong(getSlot());
     }
 
     protected boolean isBoolean(@SuppressWarnings("unused") VirtualFrame frame) {
-        return getSlot().getKind() == FrameSlotKind.Boolean;
+        return frame.isBoolean(getSlot());
     }
 }

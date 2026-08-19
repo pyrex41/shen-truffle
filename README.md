@@ -1,59 +1,93 @@
 # shen-truffle
 
-shen-truffle is a port of the [Shen programming
-language](http://www.shenlanguage.org/) to the [Graal
-runtime](https://github.com/graalvm/graal).
+`shen-truffle` is a Shen 41.2 implementation built on the GraalVM Truffle
+language framework. It is an embeddable Polyglot language and a small command
+line program, suitable for use directly or as a Bifrost/Yggdrasil backend.
 
-### Acknowledgments
+The runtime targets GraalVM 25 (Java 25) and keeps Shen's KLambda evaluator,
+closures, currying, tail calls, Prolog, and standard library semantics. The
+Shen 41.2 kernel and standard-library sources are packaged with the assembled
+distribution, so an installed launcher does not depend on a checkout.
 
-Thanks to [Dr Mark Tarver](http://marktarver.com) for his work in
-science and philosophy in general, and Shen in particular.
+## Quick start
 
-## Usage
+Install [GraalVM for JDK 25](https://www.graalvm.org/jdk25/) and
+[Maven](https://maven.apache.org/), then:
 
-Not yet 
-
-## Development
-
-You will need:
-
-- A GraalVM (< 0.26) or a JDK8 built with JVMCI. You can download either from:
-  - http://www.oracle.com/technetwork/oracle-labs/program-languages/downloads/index.html
-- [Maven](https://maven.apache.org/)
-
-To build:
-
-```
-mvn compile
+```sh
+mvn -B package
+scripts/shen-truffle --version
+scripts/shen-truffle                 # interactive REPL
+scripts/shen-truffle eval -e '(+ 2 3)'
+scripts/shen-truffle script path/to/program.shen
 ```
 
-To run you will currently need to hack the `shen-truffle` script to use your GraalVM/JVM.
+`JAVA_HOME` (or `JAVACMD`) selects the JVM. A Windows equivalent is
+`scripts\shen-truffle.cmd`. The launcher prefers `target/shen-truffle/` from
+the Maven assembly and falls back to `target/classes` for development.
 
-## References
+The standard library is loaded by default. Embedders can select kernel-only
+operation with `ShenRuntime.builder().standardLibrary(false)`.
 
-### Shen
+## CLI
 
-- http://www.shenlanguage.org/
-- http://www.shenlanguage.org/learn-shen/shendoc.htm
-- [Shen Sources](https://github.com/shen-Language/shen-sources)
+The stable command surface is:
 
-### Other Shen ports
-- [Shen Common Lisp](https://github.com/shen-Language/shen-cl)
-- [Shen.java](https://github.com/hraberg/Shen.java)
-- [ShenSharp](https://github.com/rkoeninger/ShenSharp)
+```text
+shen-truffle [repl]
+shen-truffle eval [-q] [-e EXPR] [-l FILE]
+shen-truffle script FILE [ARGS...]
+shen-truffle --help | --version
+```
 
-### General
+Top-level `-e` and `-l` remain accepted for compatibility with older scripts.
+`--version` reports the Shen kernel, port, Java, and GraalVM versions.
 
-- http://matt.might.net/articles/closure-conversion/
+## Embedding
 
+Java applications can use `com.github.ragnard.shen.ShenRuntime`:
 
-### Truffle
-- [Graal/truffle](https://github.com/graalvm/graal/truffle)
-- [Truffle Javadoc](https://graalvm.github.io/graal/truffle/javadoc/)
+```java
+try (var shen = ShenRuntime.builder().build()) {
+    var value = shen.eval("(+ 2 3)");
+    System.out.println(value.asInt());
+}
+```
 
-### Other truffle languages
-- [TruffleRuby](https://github.com/graalvm/truffleruby)
-- [An Oz Implementation using Truffle and Graal](https://dial.uclouvain.be/memoire/ucl/en/object/thesis%3A10657/datastream/PDF_01/view)
-- [TruffleClojure](http://ssw.jku.at/Teaching/MasterTheses/Graal/TruffleClojure.pdf)
-- [Mumbler](http://cesquivias.github.io/tags/truffle.html)
+The API returns `org.graalvm.polyglot.Value`, exposes executable functions and
+proper lists through Polyglot interop, and keeps bindings context-local.
+Contexts are single-thread confined; create one runtime per concurrent thread.
 
+## Building and testing
+
+```sh
+mvn -B verify                         # compile, unit tests, package checks
+mvn -B -Pshen verify                  # run the vendored Shen 41.2 kernel suite
+mvn -B -Pnative package               # optional Native Image distribution
+scripts/shen-truffle --version
+```
+
+The `shen` Maven profile runs the vendored canonical Shen 41.2 corpus and
+requires a zero-failure, 100% report. Bifrost exercises the CLI, arithmetic,
+recursion, errors, quiet mode, and file behavior. Yggdrasil exposes `truffle`
+(a relocatable JVM app directory) and `truffle-native` (a standalone Native
+Image executable) targets.
+
+## Project layout
+
+* `src/main/java` — Truffle AST, parser, runtime, and Polyglot entry point.
+* `src/main/resources/klambda` — boot kernel resources.
+* `src/main/resources/stlib` — bundled Shen standard-library sources.
+* `src/test/resources/kernel-tests` — vendored Shen 41.2 certification corpus.
+* `scripts/` — portable POSIX and Windows launchers.
+
+## License and acknowledgements
+
+The implementation is released under the BSD 3-Clause License; see
+[`LICENSE`](LICENSE). Shen is the work of [Dr Mark Tarver](http://marktarver.com).
+Kernel and standard-library files retain their upstream notices and licenses;
+the assembled distribution includes those notices and provenance metadata.
+
+References: [Shen](https://www.shenlanguage.org/), [GraalVM Truffle](https://www.graalvm.org/jdk25/graalvm-as-a-platform/language-implementation-framework/),
+[shen-go](https://github.com/pyrex41/shen-go), and
+[shen-lua](https://github.com/pyrex41/shen-lua).

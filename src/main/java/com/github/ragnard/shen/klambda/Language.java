@@ -1,24 +1,24 @@
 package com.github.ragnard.shen.klambda;
 
-import com.github.ragnard.shen.klambda.nodes.DoNode;
-import com.github.ragnard.shen.klambda.nodes.ExpressionNode;
 import com.github.ragnard.shen.klambda.nodes.RootNode;
 import com.github.ragnard.shen.klambda.nodes.SequenceNode;
 import com.github.ragnard.shen.util.IndexedPushbackReader;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.source.Source;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@TruffleLanguage.Registration(name = "klambda", version = "1.0", mimeType = Language.MIME_TYPE)
+@TruffleLanguage.Registration(id = "klambda", name = "KLambda", version = "41.2", characterMimeTypes = Language.MIME_TYPE)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class})
 public class Language extends TruffleLanguage<Context> {
+
+    public static final String ID = "klambda";
+    public static final ContextReference<Context> CONTEXT_REFERENCE = ContextReference.create(Language.class);
 
     public static final String MIME_TYPE = "application/x-klambda";
 
@@ -46,29 +46,18 @@ public class Language extends TruffleLanguage<Context> {
                 }
 
                 RootNode expr = Analyzer.analyzeRoot(this, form, source.createSection(startIndex, r.getPosition()-startIndex-1));
-                callTargets.add(Truffle.getRuntime().createCallTarget(expr));
+                callTargets.add(expr.getCallTarget());
             }
 
             SequenceNode node = new SequenceNode(callTargets.toArray(new CallTarget[0]));
             RootNode root = new RootNode(this, null, node);
             //NodeUtil.printCompactTree(System.out, root);
 
-            return Truffle.getRuntime().createCallTarget(root);
+            return root.getCallTarget();
             //return Truffle.getRuntime().createCallTarget(new RootNode(null, null, doNode));
         }
     }
 
-    @Override
-    protected Object findExportedSymbol(Context context, String globalName, boolean onlyExplicit) {
-        return null;
-    }
-
-    @Override
-    protected Object getLanguageGlobal(Context context) {
-        return null;
-    }
-
-    @Override
     protected boolean isObjectOfLanguage(Object object) {
         return false;
     }

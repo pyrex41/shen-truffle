@@ -3,6 +3,7 @@ package com.github.ragnard.shen.klambda.nodes.builtins.generic;
 import com.github.ragnard.shen.klambda.nodes.builtins.BuiltinNode;
 import com.github.ragnard.shen.klambda.runtime.Cons;
 import com.github.ragnard.shen.klambda.runtime.Symbol;
+import com.github.ragnard.shen.klambda.runtime.Vector;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -40,6 +41,9 @@ public abstract class Equals extends BuiltinNode {
         return absvectorEquality(x, y);
     }
 
+    @Specialization
+    public Symbol equals(Vector x, Vector y) { return vectorEquality(x, y); }
+
 
     @Specialization
     @CompilerDirectives.TruffleBoundary
@@ -66,6 +70,8 @@ public abstract class Equals extends BuiltinNode {
             return absvectorEquality((Object[])x, (Object[])y);
         } else if (x instanceof Cons && y instanceof Cons) {
             return listEquality((Cons)x, (Cons)y);
+        } else if (x instanceof Vector && y instanceof Vector) {
+            return vectorEquality((Vector)x, (Vector)y);
         } else {
             return Symbol.fromBoolean(x != null && x.equals(y));
         }
@@ -80,6 +86,12 @@ public abstract class Equals extends BuiltinNode {
                 return Symbol.FALSE;
             }
         }
+        return Symbol.TRUE;
+    }
+
+    public static Symbol vectorEquality(Vector x, Vector y) {
+        if (x.size() != y.size()) return Symbol.FALSE;
+        for (int i = 0; i < x.size(); i++) if (!equals(x.get(i), y.get(i)).asBoolean()) return Symbol.FALSE;
         return Symbol.TRUE;
     }
 
