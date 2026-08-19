@@ -12,7 +12,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>25</maven.compiler.release>
-        <truffle.version>25.0.2</truffle.version>
+        <truffle.version>25.2.4</truffle.version>
         <truffle.runtime.scope>runtime</truffle.runtime.scope>
         <junit.version>5.12.2</junit.version>
         <shen.certify>false</shen.certify>
