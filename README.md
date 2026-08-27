@@ -91,3 +91,22 @@ the assembled distribution includes those notices and provenance metadata.
 References: [Shen](https://www.shenlanguage.org/), [GraalVM Truffle](https://www.graalvm.org/jdk25/graalvm-as-a-platform/language-implementation-framework/),
 [shen-go](https://github.com/pyrex41/shen-go), and
 [shen-lua](https://github.com/pyrex41/shen-lua).
+## Optional Nix environment
+
+Nix is optional; the normal shen-truffle build and launcher commands continue to work
+with tools installed by any method. For a pinned development toolchain:
+
+```sh
+nix develop
+```
+
+The flake also exports `packages.toolchain` for composition by
+[Bifrost](https://github.com/pyrex41/bifrost):
+
+```sh
+nix shell .#toolchain
+```
+
+If direnv is installed, `direnv allow` opts this checkout into the same dev
+shell automatically. Nothing activates until that explicit authorization, and
+Nix is never required at runtime.
