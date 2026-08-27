@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Command-line entry point for Shen 41.2. */
+/** Command-line entry point for Shen 42.0. */
 public final class Shen {
     private final ShenRuntime embedded;
     public Shen() { embedded = ShenRuntime.builder().build(); }
@@ -96,7 +96,7 @@ public final class Shen {
     private static String quote(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }
     private static int error(String s) { System.err.println("ERROR: " + s); return 1; }
     private static void version() {
-        System.out.println("Shen 41.2 (shen-truffle, GraalVM " + System.getProperty("java.vm.version") + ")");
+        System.out.println("Shen 42.0 (shen-truffle, GraalVM " + System.getProperty("java.vm.version") + ")");
     }
     private static void usage() {
         System.out.println("Usage: shen-truffle [--help|--version] [repl|script FILE [ARGS...]|eval OPTIONS]");

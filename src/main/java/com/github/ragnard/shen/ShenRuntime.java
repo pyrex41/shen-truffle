@@ -60,7 +60,18 @@ public final class ShenRuntime implements AutoCloseable {
         evalRaw(b.toString(), "<configure-argv>");
     }
     private void loadBundledLibrary() {
-        String[] names = {"stlib/Symbols/symbols1.shen", "stlib/Symbols/symbols2.shen", "stlib/Maths/macros.shen", "stlib/Maths/maths.shen", "stlib/Lists/lists.shen", "stlib/Strings/macros.shen", "stlib/Strings/strings.shen", "stlib/Vectors/macros.shen", "stlib/Vectors/vectors.shen", "stlib/Tuples/tuples.shen"};
+        // Match Tarver's S42 Lib/StLib/install.shen order, including datatype
+        // declarations and the IO/package modules required by later sources.
+        String[] names = {"stlib/Symbols/symbols1.shen", "stlib/Symbols/symbols2.shen",
+                "stlib/Maths/macros.shen", "stlib/Maths/maths.shen",
+                "stlib/Maths/rationals.dtype", "stlib/Maths/rationals.shen",
+                "stlib/Maths/complex.dtype", "stlib/Maths/complex.shen",
+                "stlib/Maths/numerals.dtype", "stlib/Maths/numerals.shen",
+                "stlib/Lists/lists.shen", "stlib/Strings/macros.shen",
+                "stlib/Strings/strings.shen", "stlib/Strings/smart.shen",
+                "stlib/Vectors/macros.shen", "stlib/IO/prettyprint.shen",
+                "stlib/IO/delete-file.shen", "stlib/IO/files.shen",
+                "stlib/Tuples/tuples.shen", "stlib/package-stlib.shen"};
         try { libraryTemp = Files.createTempDirectory("shen-stlib-"); } catch (IOException e) { throw new UncheckedIOException(e); }
         for (String n : names) try (InputStream in = ShenRuntime.class.getClassLoader().getResourceAsStream(n)) {
             if (in == null) throw new IllegalStateException("missing standard library resource " + n);

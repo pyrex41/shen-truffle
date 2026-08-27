@@ -18,8 +18,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Smoke gate for the vendored Shen 41.2 certification corpus. */
-class Shen412CertificationTest {
+/** Smoke gate for the vendored Shen 42.0 certification corpus. */
+class Shen420CertificationTest {
     private static final String CORPUS = "kernel-tests";
 
     @Test
@@ -31,7 +31,7 @@ class Shen412CertificationTest {
         assertTrue(Files.exists(root));
         try (Stream<Path> files = Files.walk(root)) {
             long count = files.filter(Files::isRegularFile).count();
-            assertTrue(count >= 50, "canonical Shen 41.2 corpus appears incomplete");
+            assertTrue(count >= 50, "canonical Shen 42.0 corpus appears incomplete");
         }
         assertTrue(Files.exists(root.resolve("runme.shen")), "core Shen certification suite missing");
         assertTrue(Files.exists(root.resolve("prolog.shen")), "Prolog certification fixture missing");
@@ -39,7 +39,7 @@ class Shen412CertificationTest {
         Path manifest = root.resolve("VERSION");
         if (Files.exists(manifest)) {
             String version = Files.readString(manifest, StandardCharsets.UTF_8);
-            assertTrue(version.contains("41.2"), "certification manifest must identify Shen 41.2");
+            assertTrue(version.contains("42.0"), "certification manifest must identify Shen 42.0");
         }
     }
 

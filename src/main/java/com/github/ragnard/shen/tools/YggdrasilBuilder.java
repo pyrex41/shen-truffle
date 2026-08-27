@@ -13,8 +13,8 @@ import java.util.*;
  * a relocatable application whose launcher delegates to ShakenLauncher.
  */
 public final class YggdrasilBuilder {
-    /** Tarver S41.2 refresh emitted by Yggdrasil stage 1. */
-    private static final String KERNEL_VERSION = "41.2-s41r.20260711";
+    /** Tarver Shen 42.0 distribution emitted by Yggdrasil stage 1. */
+    private static final String KERNEL_VERSION = "42-s42.20260825";
     private YggdrasilBuilder() {}
 
     public static void main(String[] args) throws Exception {
