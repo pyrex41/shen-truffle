@@ -17,10 +17,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up GraalVM for JDK 25
-        uses: graalvm/setup-graalvm@v1
+      - name: Set up GraalVM 25.2
+        uses: graalvm/setup-graalvm@v1.6.4
         with:
-          java-version: '25'
+          version: '25.2'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: maven
@@ -45,10 +45,10 @@ jobs:
     needs: verify
     steps:
       - uses: actions/checkout@v4
-      - name: Set up GraalVM for JDK 25
-        uses: graalvm/setup-graalvm@v1
+      - name: Set up GraalVM 25.2
+        uses: graalvm/setup-graalvm@v1.6.4
         with:
-          java-version: '25'
+          version: '25.2'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: maven
@@ -61,14 +61,19 @@ jobs:
     needs: verify
     steps:
       - uses: actions/checkout@v4
-      - name: Set up GraalVM for JDK 25
-        uses: graalvm/setup-graalvm@v1
+      - name: Set up GraalVM 25.2
+        uses: graalvm/setup-graalvm@v1.6.4
         with:
-          java-version: '25'
+          version: '25.2'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          native-image: true
           cache: maven
+      - name: Verify Native Image toolchain
+        shell: bash
+        run: |
+          java --version
+          native-image --version
+          native-image --version | grep '25\.2\.'
       - name: Build native distribution
         run: mvn --batch-mode --no-transfer-progress -Pnative package
       - name: Exercise native distribution

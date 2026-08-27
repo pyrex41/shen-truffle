@@ -94,11 +94,15 @@ References: [Shen](https://www.shenlanguage.org/), [GraalVM Truffle](https://www
 ## Optional Nix environment
 
 Nix is optional; the normal shen-truffle build and launcher commands continue to work
-with tools installed by any method. For a pinned development toolchain:
+with tools installed by any method. For a pinned Maven and GraalVM 25.2 toolchain
+that matches the Truffle dependencies:
 
 ```sh
 nix develop
 ```
+
+The shell supports both the JVM build (`mvn verify`) and the native build
+(`mvn -Pnative package`).
 
 The flake also exports `packages.toolchain` for composition by
 [Bifrost](https://github.com/pyrex41/bifrost):
