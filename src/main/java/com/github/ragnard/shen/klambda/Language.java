@@ -13,7 +13,7 @@ import com.oracle.truffle.api.source.Source;
 import java.util.ArrayList;
 import java.util.List;
 
-@TruffleLanguage.Registration(id = "klambda", name = "KLambda", version = "41.2", characterMimeTypes = Language.MIME_TYPE)
+@TruffleLanguage.Registration(id = "klambda", name = "KLambda", version = "42", characterMimeTypes = Language.MIME_TYPE)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class})
 public class Language extends TruffleLanguage<Context> {
 

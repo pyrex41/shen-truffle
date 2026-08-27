@@ -19,11 +19,10 @@
    "Enoch" "Methu'selah" <--;
    "Methu'selah" "Lamech" <--;)
 
-(prolog? (findall Age (lived Person Age) Ages)
+(prolog? (findall Age (lived Person Age) Ages) 
          (return (sum Ages)))
-
+         
 (defprolog total
            [] 0 <--;
            [X | Y] N <-- (total Y M) (is N (+ M X));)
-
 

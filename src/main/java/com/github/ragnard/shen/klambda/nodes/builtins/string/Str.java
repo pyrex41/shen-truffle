@@ -39,7 +39,7 @@ public abstract class Str extends BuiltinNode {
      * Shen's vectors are represented by Object[] at the Java boundary.  They
      * are still valid values for {@code str} (notably in hashkey and error
      * formatting paths); leaving this specialization out causes an
-     * UnsupportedSpecializationException while booting the 41.2 kernel.
+     * UnsupportedSpecializationException while booting the 42.0 kernel.
      */
     @Specialization
     @CompilerDirectives.TruffleBoundary
@@ -61,7 +61,7 @@ public abstract class Str extends BuiltinNode {
 
     /**
      * Compound and host-backed Shen values are printable too.  In particular,
-     * the 41.2 kernel calls {@code str} while hashing type signatures (lists)
+     * the 42.0 kernel calls {@code str} while hashing type signatures (lists)
      * and vectors during its bootstrap.
      */
     @Fallback
