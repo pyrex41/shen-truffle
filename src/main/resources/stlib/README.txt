@@ -1,1 +1,1 @@
-to install the standard library, cd in Shen to this directory and enter install.shen
+to install the extended library, cd in Shen to this directory and enter install.shen

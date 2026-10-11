@@ -45,4 +45,3 @@
                ok
                (simple-error
                  (make-string "extension test failures: ~A" Failed))))))
-
