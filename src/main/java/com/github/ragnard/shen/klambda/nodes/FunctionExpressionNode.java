@@ -7,6 +7,7 @@ import com.github.ragnard.shen.klambda.runtime.Symbol;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -25,11 +26,17 @@ public abstract class FunctionExpressionNode extends ExpressionNode {
         return cachedFunction.function;
     }
 
+    /** Applying a non-function is an ordinary, trappable Shen error. */
+    @Fallback
+    public Function doNotAFunction(Object value) {
+        throw new TrapException("attempt to apply non-function " + value);
+    }
+
     protected Context.RegisteredFunction resolveFunction(Symbol functionName) {
         Context context = Language.CONTEXT_REFERENCE.get(this);
         Context.RegisteredFunction function = context.lookupFunction(functionName.getName());
         if (function == null) {
-            throw new RuntimeException("function not found: " + functionName);
+            throw new TrapException("fn: " + functionName + " is undefined");
         }
         return function;
     }

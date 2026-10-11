@@ -12,9 +12,19 @@ public abstract class Multiply extends BuiltinNode {
     protected Object invalidOperands(Object x, Object y) {
         throw new TrapException("Multiply: numeric operands required");
     }
-    @Specialization
-    public long multiply(long x, long y) {
+    @Specialization(rewriteOn = ArithmeticException.class)
+    public long multiplyLongs(long x, long y) {
         return Math.multiplyExact(x, y);
+    }
+
+    /** Integers beyond 64 bits continue as floats instead of failing the host. */
+    @Specialization(replaces = "multiplyLongs")
+    public Object multiplyLongsOverflowing(long x, long y) {
+        try {
+            return Math.multiplyExact(x, y);
+        } catch (ArithmeticException e) {
+            return (double) x * (double) y;
+        }
     }
 
     @Specialization

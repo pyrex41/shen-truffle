@@ -6,7 +6,6 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 
@@ -14,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 public final class ShenRuntime implements AutoCloseable {
     private final Context context;
     private final Path workingDirectory;
-    private Path libraryTemp;
 
     private ShenRuntime(Builder b) {
         this.workingDirectory = b.workingDirectory.toAbsolutePath().normalize();
@@ -24,74 +22,94 @@ public final class ShenRuntime implements AutoCloseable {
         this.context = cb.build();
         if (b.bootKernel) {
             loadKernel();
-            configureHomeDirectory();
             if (b.standardLibrary) loadBundledLibrary();
+            // stlib.initialise ends with (cd ""), so the home directory is set last.
+            configureHomeDirectory();
         } else if (b.standardLibrary) {
             throw new IllegalArgumentException("standardLibrary requires bootKernel");
         }
     }
 
+    /**
+     * ShenOSKernel 42.2 modules. They contain only defuns, so their order is
+     * irrelevant; {@code shen.initialise} (init.kl) builds the environment,
+     * the dict-backed property vector, arities and lambda forms afterwards.
+     */
+    static final String[] KERNEL_MODULES = {"sys.kl", "writer.kl", "core.kl", "reader.kl", "declarations.kl",
+            "toplevel.kl", "macros.kl", "load.kl", "prolog.kl", "sequent.kl", "track.kl", "t-star.kl", "yacc.kl",
+            "types.kl", "dict.kl", "init.kl", "extension-launcher.kl"};
+
     private void loadKernel() {
-        String[] names = {"sys.kl", "writer.kl", "core.kl", "reader.kl", "declarations.kl", "toplevel.kl", "macros.kl", "load.kl", "prolog.kl", "sequent.kl", "track.kl", "t-star.kl", "yacc.kl", "types.kl", "extension-launcher.kl"};
-        for (String n : names) try (InputStream in = ShenRuntime.class.getClassLoader().getResourceAsStream("klambda/" + n)) {
-            if (in == null) throw new IllegalStateException("missing kernel resource " + n);
-            evalRaw(new String(in.readAllBytes(), StandardCharsets.UTF_8), n);
-        } catch (IOException e) { throw new UncheckedIOException(e); }
+        for (String n : KERNEL_MODULES) evalResource("klambda/" + n);
         installPortOverrides();
+        evalRaw("(shen.initialise)", "<shen.initialise>");
+    }
+
+    private void evalResource(String name) {
+        try (InputStream in = ShenRuntime.class.getClassLoader().getResourceAsStream(name)) {
+            if (in == null) throw new IllegalStateException("missing kernel resource " + name);
+            evalRaw(new String(in.readAllBytes(), StandardCharsets.UTF_8), name);
+        } catch (IOException e) { throw new UncheckedIOException(e); }
     }
 
     /** Port-specific behavior which cannot be expressed by the portable kernel primitives. */
     void installPortOverrides() {
-        // Tarver's portable pr/2 gates every stream on *hush*.  A launcher must
+        // The portable pr/2 gates every stream on *hush*.  A launcher must
         // hush only its standard output so -q never discards explicit file IO.
         evalRaw("(defun pr (X Stream) (if (and (value *hush*) (= Stream (value *stoutput*))) X " +
                 "(if (shen.char-stoutput? Stream) (shen.write-string X Stream) " +
                 "(shen.write-chars X Stream (shen.string->byte X 0) 1))))", "<port-overrides>");
+        // The kernel's symbol? parses (str X); only host symbols may qualify,
+        // otherwise an anonymous function (printed <function>) is a symbol.
+        evalRaw("(defun symbol? (X) (if (shen.truffle.symbol-object? X) (if (boolean? X) false " +
+                "(if (element? X (cons { (cons } (cons (intern \":\") (cons (intern \";\") (cons (intern \",\") ())))))) true " +
+                "(trap-error (shen.analyse-symbol? (str X)) (lambda E false)))) false))", "<port-overrides>");
+        // The kernel hashes (str X); hash equal numbers (1 and 1.0) alike so
+        // hash agrees with = and dict lookups (get/put) find them.
+        evalRaw("(defun hash (X Bound) (let H (shen.mod (shen.hashkey (shen.truffle.normalise-number X)) Bound) " +
+                "(if (= H 0) 1 H)))", "<port-overrides>");
     }
 
-    private static String escape(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r"); }
+    /**
+     * A KLambda expression evaluating to {@code s}. KL string literals have no
+     * escapes, so a double quote is spliced in with {@code (n->string 34)}.
+     */
+    static String klString(String s) {
+        String[] parts = s.split("\"", -1);
+        String expr = "\"" + parts[parts.length - 1] + "\"";
+        for (int i = parts.length - 2; i >= 0; i--)
+            expr = "(cn \"" + parts[i] + "\" (cn (n->string 34) " + expr + "))";
+        return expr;
+    }
     void configureHomeDirectory() {
-        evalRaw("(set *home-directory* \"" + escape(workingDirectory.toString()) + "\")", "<configure-home>");
+        evalRaw("(set *home-directory* " + klString(workingDirectory.toString()) + ")", "<configure-home>");
     }
     void configureArgv(String[] args) {
         StringBuilder b = new StringBuilder("(set *argv* ");
-        for (int i = 0; args != null && i < args.length; i++) b.append("(cons \"").append(escape(args[i])).append("\" ");
+        for (int i = 0; args != null && i < args.length; i++) b.append("(cons ").append(klString(args[i])).append(" ");
         b.append("()").append(")".repeat(Math.max(0, args == null ? 0 : args.length) + 1));
         evalRaw(b.toString(), "<configure-argv>");
     }
     private void loadBundledLibrary() {
-        // Match Tarver's S42 Lib/StLib/install.shen order, including datatype
-        // declarations and the IO/package modules required by later sources.
-        String[] names = {"stlib/Symbols/symbols1.shen", "stlib/Symbols/symbols2.shen",
-                "stlib/Maths/macros.shen", "stlib/Maths/maths.shen",
-                "stlib/Maths/rationals.dtype", "stlib/Maths/rationals.shen",
-                "stlib/Maths/complex.dtype", "stlib/Maths/complex.shen",
-                "stlib/Maths/numerals.dtype", "stlib/Maths/numerals.shen",
-                "stlib/Lists/lists.shen", "stlib/Strings/macros.shen",
-                "stlib/Strings/strings.shen", "stlib/Strings/smart.shen",
-                "stlib/Vectors/macros.shen", "stlib/IO/prettyprint.shen",
-                "stlib/IO/delete-file.shen", "stlib/IO/files.shen",
-                "stlib/Tuples/tuples.shen", "stlib/package-stlib.shen"};
-        try { libraryTemp = Files.createTempDirectory("shen-stlib-"); } catch (IOException e) { throw new UncheckedIOException(e); }
-        for (String n : names) try (InputStream in = ShenRuntime.class.getClassLoader().getResourceAsStream(n)) {
-            if (in == null) throw new IllegalStateException("missing standard library resource " + n);
-            Path target = libraryTemp.resolve(n.substring("stlib/".length()));
-            Files.createDirectories(target.getParent());
-            Files.write(target, in.readAllBytes());
-            // Shen source must go through Shen's reader/compiler, not the raw KL parser.
-            // The launcher helper avoids the normal per-definition load chatter.
-            try {
-                evalRaw("(shen.x.launcher.quiet-load \"" + escape(target.toString()) + "\")", n);
-            } catch (RuntimeException e) {
-                throw new IllegalStateException("failed to load bundled standard library resource " + n, e);
-            }
-        } catch (IOException e) { throw new UncheckedIOException(e); }
+        // ShenOSKernel 42.2 ships the standard library precompiled as
+        // klambda/stlib.kl; stlib.initialise installs its packages, arities,
+        // lambda forms, macros, datatypes and types (doc/port-upgrades.md 41.1).
+        try {
+            evalResource("klambda/stlib.kl");
+            evalRaw("(stlib.initialise)", "<stlib.initialise>");
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("failed to load bundled standard library", e);
+        }
     }
 
     public static Builder builder() { return new Builder(); }
     /** Evaluate one Shen expression in the booted runtime. */
     public Value eval(String source) {
-        return evalRaw("(shen.x.launcher.eval-string \"" + escape(source) + "\")", "<eval>");
+        return evalRaw("(shen.x.launcher.eval-string " + klString(source) + ")", "<eval>");
+    }
+    /** Evaluate one Shen expression and render the result with Shen's own printer (as {@code ~A}). */
+    public String evalToString(String source) {
+        return evalRaw("(shen.app (shen.x.launcher.eval-string " + klString(source) + ") \"\" shen.a)", "<eval>").asString();
     }
     /** Internal loader path for KL resources and shaken slices. */
     Value evalRaw(String source, String name) {
@@ -100,15 +118,20 @@ public final class ShenRuntime implements AutoCloseable {
     }
     public Value load(Path source) {
         Path resolved = source.isAbsolute() ? source : workingDirectory.resolve(source);
-        return evalRaw("(load \"" + escape(resolved.normalize().toString()) + "\")", source.toString());
+        return evalRaw("(load " + klString(resolved.normalize().toString()) + ")", source.toString());
+    }
+    /**
+     * Runs a script as the kernel launcher's {@code script} command does:
+     * each toplevel form is evaluated without echoing its value.
+     */
+    public Value script(Path source) {
+        Path resolved = source.isAbsolute() ? source : workingDirectory.resolve(source);
+        return evalRaw("(shen.x.launcher.quiet-load " + klString(resolved.normalize().toString()) + ")", source.toString());
     }
     public Path workingDirectory() { return workingDirectory; }
     Context context() { return context; }
     @Override public void close() {
         context.close();
-        if (libraryTemp != null) try (var walk = Files.walk(libraryTemp)) {
-            walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> { try { Files.deleteIfExists(p); } catch (IOException ignored) {} });
-        } catch (IOException ignored) { }
     }
 
     public static final class Builder {
