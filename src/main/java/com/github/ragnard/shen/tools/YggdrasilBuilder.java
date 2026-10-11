@@ -13,8 +13,15 @@ import java.util.*;
  * a relocatable application whose launcher delegates to ShakenLauncher.
  */
 public final class YggdrasilBuilder {
-    /** Tarver Shen 42.0 distribution emitted by Yggdrasil stage 1. */
-    private static final String KERNEL_VERSION = "42-s42.20260825";
+    /** Tarver Shen 42.0 distribution emitted by Yggdrasil stage 1 before its 42.2 upgrade. */
+    private static final String LEGACY_KERNEL_VERSION = "42-s42.20260825";
+    /** ShenOSKernel 42.2 slices (pyrex41/yggdrasil#32); any "42.2..." identity is accepted. */
+    private static final String KERNEL_VERSION = "42.2";
+
+    /** The packager is kernel-agnostic; it only refuses slices from unrelated kernel lines. */
+    static boolean supportedKernelVersion(String v) {
+        return v.equals(LEGACY_KERNEL_VERSION) || v.equals(KERNEL_VERSION) || v.startsWith(KERNEL_VERSION + "-") || v.startsWith(KERNEL_VERSION + ".");
+    }
     private YggdrasilBuilder() {}
 
     public static void main(String[] args) throws Exception {
@@ -121,7 +128,7 @@ public final class YggdrasilBuilder {
     static final class Manifest {
         final String source; String kernel="kernel.kl"; String init; final List<String> users=new ArrayList<>();
         private Manifest(String s){source=s;}
-        static Manifest read(Path dir) throws IOException { Path p=dir.resolve("yggdrasil.manifest.txt"); if(!Files.isRegularFile(p)) throw new IOException("missing yggdrasil.manifest.txt"); Manifest m=new Manifest(Files.readString(p)); for(String raw:m.source.split("\\R")){String l=raw.trim();if(l.isEmpty()||l.startsWith("#"))continue;int n=l.indexOf('=');if(n<=0)throw new IOException("malformed manifest line: "+raw);String k=l.substring(0,n).trim(),v=l.substring(n+1).trim();switch(k){case "manifest-version": if(!v.equals("3"))throw new IOException("unsupported manifest-version "+v);break;case "kernel-version": if(!v.equals(KERNEL_VERSION))throw new IOException("expected kernel-version "+KERNEL_VERSION+", got "+v);break;case "kernel":m.kernel=v;break;case "init":m.init=v;break;case "user":m.users.add(v);break;default:}}
+        static Manifest read(Path dir) throws IOException { Path p=dir.resolve("yggdrasil.manifest.txt"); if(!Files.isRegularFile(p)) throw new IOException("missing yggdrasil.manifest.txt"); Manifest m=new Manifest(Files.readString(p)); for(String raw:m.source.split("\\R")){String l=raw.trim();if(l.isEmpty()||l.startsWith("#"))continue;int n=l.indexOf('=');if(n<=0)throw new IOException("malformed manifest line: "+raw);String k=l.substring(0,n).trim(),v=l.substring(n+1).trim();switch(k){case "manifest-version": if(!v.equals("3")&&!v.equals("4"))throw new IOException("unsupported manifest-version "+v);break;case "kernel-version": if(!supportedKernelVersion(v))throw new IOException("expected kernel-version "+KERNEL_VERSION+" (or "+LEGACY_KERNEL_VERSION+"), got "+v);break;case "kernel":m.kernel=v;break;case "init":m.init=v;break;case "user":m.users.add(v);break;default:}}
             List<String> fs=m.files(); Set<String> seen=new HashSet<>(); for(String f:fs){Path q=dir.resolve(f).normalize();if(q.getParent()==null||!q.startsWith(dir)||f.isEmpty()||!seen.add(f)||!Files.isRegularFile(q))throw new IOException("invalid or missing manifest file: "+f);} return m; }
         /** Files are loaded in manifest order; init is a KL function name, not a file. */
         List<String> files(){List<String> x=new ArrayList<>();x.add(kernel);x.addAll(users);return x;}

@@ -13,9 +13,19 @@ public abstract class Subtract extends BuiltinNode {
         throw new TrapException("Subtract: numeric operands required");
     }
 
-    @Specialization
-    public long subtract(long x, long y) {
+    @Specialization(rewriteOn = ArithmeticException.class)
+    public long subtractLongs(long x, long y) {
         return Math.subtractExact(x, y);
+    }
+
+    /** Integers beyond 64 bits continue as floats instead of failing the host. */
+    @Specialization(replaces = "subtractLongs")
+    public Object subtractLongsOverflowing(long x, long y) {
+        try {
+            return Math.subtractExact(x, y);
+        } catch (ArithmeticException e) {
+            return (double) x - (double) y;
+        }
     }
 
     @Specialization

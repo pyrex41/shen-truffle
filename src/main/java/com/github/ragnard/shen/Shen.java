@@ -1,15 +1,11 @@
 package com.github.ragnard.shen;
 
-import org.graalvm.polyglot.Value;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
-/** Command-line entry point for Shen 42.0. */
+/** Command-line entry point for Shen (ShenOSKernel 42.2). */
 public final class Shen {
     private final ShenRuntime embedded;
     public Shen() { embedded = ShenRuntime.builder().build(); }
@@ -43,8 +39,8 @@ public final class Shen {
         if ("repl".equals(argv[0])) return repl(rt);
         if ("script".equals(argv[0])) {
             if (argv.length < 2) return error("missing script file");
-            setArgv(rt, argv, 1);
-            rt.eval("(load \"" + quote(argv[1]) + "\")");
+            rt.configureArgv(java.util.Arrays.copyOfRange(argv, 1, argv.length));
+            rt.script(Path.of(argv[1]));
             return 0;
         }
 
@@ -56,8 +52,8 @@ public final class Shen {
             if ("-q".equals(a) || "--quiet".equals(a)) { rt.eval("(set *hush* true)"); quiet = true; continue; }
             if ("-e".equals(a) || "--eval".equals(a)) {
                 if (i >= argv.length) return error("missing argument to " + a);
-                Value v = rt.eval(argv[i++]);
-                if (!quiet) print(v);
+                String shown = rt.evalToString(argv[i++]);
+                if (!quiet) System.out.println(shown);
                 did = true; continue;
             }
             if ("-l".equals(a) || "--load".equals(a)) {
@@ -76,27 +72,14 @@ public final class Shen {
         String line;
         while ((line = r.readLine()) != null) {
             if (line.trim().isEmpty()) continue;
-            print(rt.eval(line));
+            System.out.println(rt.evalToString(line));
         }
         return 0;
     }
 
-    private static void setArgv(ShenRuntime rt, String[] args, int fileIndex) {
-        List<String> values = new ArrayList<>();
-        for (int i = fileIndex; i < args.length; i++) values.add(args[i]);
-        StringBuilder expr = new StringBuilder("(set *argv* ");
-        for (int i = 0; i < values.size(); i++) expr.append("(cons \"").append(quote(values.get(i))).append("\" ");
-        expr.append("()");
-        for (int i = 0; i < values.size(); i++) expr.append(')');
-        expr.append(')');
-        rt.eval(expr.toString());
-    }
-
-    private static void print(Value v) { if (v != null && !v.isNull()) System.out.println(v); }
-    private static String quote(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }
     private static int error(String s) { System.err.println("ERROR: " + s); return 1; }
     private static void version() {
-        System.out.println("Shen 42.0 (shen-truffle, GraalVM " + System.getProperty("java.vm.version") + ")");
+        System.out.println("Shen 42.2 (shen-truffle, GraalVM " + System.getProperty("java.vm.version") + ")");
     }
     private static void usage() {
         System.out.println("Usage: shen-truffle [--help|--version] [repl|script FILE [ARGS...]|eval OPTIONS]");

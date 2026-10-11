@@ -12,9 +12,19 @@ public abstract class Add extends BuiltinNode {
     protected Object invalidOperands(Object x, Object y) {
         throw new TrapException("Add: numeric operands required");
     }
-    @Specialization
-    public long add(long x, long y) {
+    @Specialization(rewriteOn = ArithmeticException.class)
+    public long addLongs(long x, long y) {
         return Math.addExact(x, y);
+    }
+
+    /** Integers beyond 64 bits continue as floats instead of failing the host. */
+    @Specialization(replaces = "addLongs")
+    public Object addLongsOverflowing(long x, long y) {
+        try {
+            return Math.addExact(x, y);
+        } catch (ArithmeticException e) {
+            return (double) x + (double) y;
+        }
     }
 
     @Specialization

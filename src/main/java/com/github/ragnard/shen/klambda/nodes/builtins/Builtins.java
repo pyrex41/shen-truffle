@@ -12,6 +12,7 @@ public class Builtins {
 
             // symbol
             com.github.ragnard.shen.klambda.nodes.builtins.symbol.InternFactory.getInstance(),
+            com.github.ragnard.shen.klambda.nodes.builtins.symbol.PredicateFactory.getInstance(),
 
             // string
             com.github.ragnard.shen.klambda.nodes.builtins.string.ConcatFactory.getInstance(),
@@ -70,6 +71,7 @@ public class Builtins {
             com.github.ragnard.shen.klambda.nodes.builtins.arithmetic.LessThanFactory.getInstance(),
             com.github.ragnard.shen.klambda.nodes.builtins.arithmetic.LessThanOrEqualFactory.getInstance(),
             com.github.ragnard.shen.klambda.nodes.builtins.arithmetic.NumberPredicateFactory.getInstance(),
+            com.github.ragnard.shen.klambda.nodes.builtins.arithmetic.NormaliseNumberFactory.getInstance(),
 
             // integer
             com.github.ragnard.shen.klambda.nodes.builtins.integer.PredicateFactory.getInstance(),
