@@ -35,7 +35,7 @@ public final class ShenRuntime implements AutoCloseable {
      * irrelevant; {@code shen.initialise} (init.kl) builds the environment,
      * the dict-backed property vector, arities and lambda forms afterwards.
      */
-    static final String[] KERNEL_MODULES = {"sys.kl", "writer.kl", "core.kl", "reader.kl", "declarations.kl", "compiler.kl",
+    static final String[] KERNEL_MODULES = {"sys.kl", "writer.kl", "core.kl", "reader.kl", "declarations.kl",
             "toplevel.kl", "macros.kl", "load.kl", "prolog.kl", "sequent.kl", "track.kl", "t-star.kl", "yacc.kl",
             "types.kl", "dict.kl", "init.kl", "extension-launcher.kl"};
 
