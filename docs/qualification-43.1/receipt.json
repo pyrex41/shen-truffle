@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-18",
+  "source_commit": "79e1a44210fc47f5c8ee040ce5593a2061ffd06c",
+  "platform": "Darwin arm64, GraalVM CE 25.2.4, Maven 3.9.16",
+  "command": [
+    "mvn",
+    "-Pshen",
+    "test",
+    "-q"
+  ],
+  "exit_code": 0,
+  "suites": [
+    {
+      "name": "com.github.ragnard.shen.tests.CharacterStreamBuiltinTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.151"
+    },
+    {
+      "name": "com.github.ragnard.shen.tests.CliContractTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.243"
+    },
+    {
+      "name": "com.github.ragnard.shen.tests.ModernizationContractTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "1.654"
+    },
+    {
+      "name": "com.github.ragnard.shen.tests.ReaderTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.007"
+    },
+    {
+      "name": "com.github.ragnard.shen.tests.Shen431CertificationTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "18.605"
+    }
+  ],
+  "tests": 20,
+  "canonical": {
+    "asserted_by": "Shen431CertificationTest.canonicalKernelSuitePasses",
+    "passed": 154,
+    "failed": 0,
+    "skipped": false
+  },
+  "release_kl_files": 23,
+  "native_image": "UNTESTED"
+}
