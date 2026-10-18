@@ -1,11 +1,7 @@
-# ShenOSKernel 42.2 kernel tests
+# ShenOSKernel 43.1 kernel tests
 
-Vendored byte-for-byte from the `tests/` directory of the ShenOSKernel 42.2
-release (`Shen-Language/shen-sources`, tag `shen-42.2`, commit
-`73507e069fe147aefb728d632c4ce40bc6a7b314`; `ShenOSKernel-42.2.tar.gz`
-SHA-256 `1d02273003654d34ec020ae67cb214ecec410dee3350419ff807d82b652678d8`).
-`runme.shen` runs 143 kernel tests; `mvn -Pshen verify` requires all of them
-to pass.
-
-Previously: the Shen 42.0 corpus from `pyrex41/shen-upstream` tag
-`s42-pristine-20260825`, commit `28825a211f5b2fb952510dab17267ca8eb9594a0`.
+Vendored byte-for-byte from the `tests/` directory of the ShenOSKernel 43.1
+release (`Shen-Language/shen-sources`, tag `shen-43.1`, commit
+`715824a52b55e9c81a9501df8548ff3edd8411f5`; release archive SHA-256
+`900eedef44f440af78f9395ed06e689ce1604546fc309f5bc7c8bc84cc651920`).
+`runme.shen` is the canonical kernel certification corpus.

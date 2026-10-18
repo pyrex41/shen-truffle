@@ -57,6 +57,9 @@ public class Builtins {
             com.github.ragnard.shen.klambda.nodes.builtins.stream.WriteByteFactory.getInstance(),
             com.github.ragnard.shen.klambda.nodes.builtins.stream.CharStInputFactory.getInstance(),
             com.github.ragnard.shen.klambda.nodes.builtins.stream.CharStOutputFactory.getInstance(),
+            com.github.ragnard.shen.klambda.nodes.builtins.stream.CharStreamFactory.getInstance(),
+            com.github.ragnard.shen.klambda.nodes.builtins.stream.ReadUnitStringFactory.getInstance(),
+            com.github.ragnard.shen.klambda.nodes.builtins.stream.WriteStringFactory.getInstance(),
 
             // time
             com.github.ragnard.shen.klambda.nodes.builtins.time.GetTimeFactory.getInstance(),

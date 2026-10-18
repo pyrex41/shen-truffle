@@ -16,7 +16,7 @@ class CliContractTest {
     void versionAndHelpAreSuccessful() throws Exception {
         ProcessResult version = invoke("--version");
         assertEquals(0, version.status());
-        assertTrue(version.output().contains("42.2"));
+        assertTrue(version.output().contains("43.1"));
         ProcessResult help = invoke("--help");
         assertEquals(0, help.status());
         assertTrue(help.output().toLowerCase().contains("usage"));

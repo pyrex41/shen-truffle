@@ -13,10 +13,10 @@ import java.util.*;
  * a relocatable application whose launcher delegates to ShakenLauncher.
  */
 public final class YggdrasilBuilder {
-    /** Tarver Shen 42.0 distribution emitted by Yggdrasil stage 1 before its 42.2 upgrade. */
+    /** Tarver Shen 42.0 distribution emitted by Yggdrasil stage 1 before its 43.1 upgrade. */
     private static final String LEGACY_KERNEL_VERSION = "42-s42.20260825";
-    /** ShenOSKernel 42.2 slices (pyrex41/yggdrasil#32); any "42.2..." identity is accepted. */
-    private static final String KERNEL_VERSION = "42.2";
+    /** ShenOSKernel 43.1 slices; any "43.1..." identity is accepted. */
+    private static final String KERNEL_VERSION = "43.1";
 
     /** The packager is kernel-agnostic; it only refuses slices from unrelated kernel lines. */
     static boolean supportedKernelVersion(String v) {

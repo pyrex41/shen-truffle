@@ -18,8 +18,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Gate for the vendored ShenOSKernel 42.2 kernel test suite. */
-class Shen420CertificationTest {
+/** Gate for the vendored ShenOSKernel 43.1 kernel test suite. */
+class Shen431CertificationTest {
     private static final String CORPUS = "kernel-tests";
 
     @Test
@@ -31,7 +31,7 @@ class Shen420CertificationTest {
         assertTrue(Files.exists(root));
         try (Stream<Path> files = Files.walk(root)) {
             long count = files.filter(Files::isRegularFile).count();
-            assertTrue(count >= 50, "ShenOSKernel 42.2 corpus appears incomplete");
+            assertTrue(count >= 50, "ShenOSKernel 43.1 corpus appears incomplete");
         }
         assertTrue(Files.exists(root.resolve("runme.shen")), "core Shen certification suite missing");
         assertTrue(Files.exists(root.resolve("prolog.shen")), "Prolog certification fixture missing");
@@ -39,7 +39,7 @@ class Shen420CertificationTest {
         Path manifest = root.resolve("VERSION");
         if (Files.exists(manifest)) {
             String version = Files.readString(manifest, StandardCharsets.UTF_8);
-            assertTrue(version.contains("42.2"), "certification manifest must identify ShenOSKernel 42.2");
+            assertTrue(version.contains("43.1"), "certification manifest must identify ShenOSKernel 43.1");
         }
     }
 
@@ -71,6 +71,6 @@ class Shen420CertificationTest {
         String report = output.toString(StandardCharsets.UTF_8);
         assertTrue(report.contains("failed ... 0"), () -> "kernel failures:\n" + report);
         assertTrue(report.contains("pass rate ... 100"), () -> "incomplete certification:\n" + report);
-        assertTrue(report.contains("passed ... 143"), () -> "expected all 143 ShenOSKernel 42.2 tests:\n" + report);
+        assertTrue(report.contains("passed ... 154"), () -> "expected all 154 ShenOSKernel 43.1 tests:\n" + report);
     }
 }

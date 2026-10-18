@@ -72,7 +72,7 @@ class ModernizationContractTest {
     @Test
     void shakenRuntimeInitialisesBeforeUserFormsAndPreservesArgv(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve("yggdrasil.manifest.txt"),
-                "manifest-version=3\nkernel-version=42-s42.20260825\n" +
+                "manifest-version=3\nkernel-version=43.1\n" +
                 "kernel=kernel.kl\ninit=shen.initialise\nuser=program.kl\n");
         Files.writeString(dir.resolve("kernel.kl"),
                 "(defun shen.initialise () (set ready true))\n");

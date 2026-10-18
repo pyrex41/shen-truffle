@@ -1,12 +1,12 @@
 # shen-truffle
 
-`shen-truffle` is a Shen implementation (ShenOSKernel 42.2) built on the GraalVM Truffle
+`shen-truffle` is a Shen implementation (ShenOSKernel 43.1) built on the GraalVM Truffle
 language framework. It is an embeddable Polyglot language and a small command
 line program, suitable for use directly or as a Bifrost/Yggdrasil backend.
 
 The runtime targets GraalVM 25 (Java 25) and keeps Shen's KLambda evaluator,
 closures, currying, tail calls, Prolog, and standard library semantics. The
-ShenOSKernel 42.2 kernel and standard-library sources are packaged with the assembled
+ShenOSKernel 43.1 kernel and standard-library sources are packaged with the assembled
 distribution, so an installed launcher does not depend on a checkout.
 
 ## Quick start
@@ -62,13 +62,13 @@ Contexts are single-thread confined; create one runtime per concurrent thread.
 
 ```sh
 mvn -B verify                         # compile, unit tests, package checks
-mvn -B -Pshen verify                  # run the vendored ShenOSKernel 42.2 kernel suite
+mvn -B -Pshen verify                  # run the vendored ShenOSKernel 43.1 kernel suite
 mvn -B -Pnative package               # optional Native Image distribution
 scripts/shen-truffle --version
 ```
 
-The `shen` Maven profile runs the vendored ShenOSKernel 42.2 kernel test suite
-and requires a zero-failure, 143/143 report. Bifrost exercises the CLI, arithmetic,
+The `shen` Maven profile runs the vendored ShenOSKernel 43.1 kernel test suite
+and requires a zero-failure report. Bifrost exercises the CLI, arithmetic,
 recursion, errors, quiet mode, and file behavior. Yggdrasil exposes `truffle`
 (a relocatable JVM app directory) and `truffle-native` (a standalone Native
 Image executable) targets.
@@ -76,11 +76,11 @@ Image executable) targets.
 ## Project layout
 
 * `src/main/java` — Truffle AST, parser, runtime, and Polyglot entry point.
-* `src/main/resources/klambda` — ShenOSKernel 42.2 KLambda (kernel, `stlib.kl`,
+* `src/main/resources/klambda` — ShenOSKernel 43.1 KLambda (kernel, `stlib.kl`,
   extensions); see its `PROVENANCE.md` for the source, checksum and boot order.
 * `src/main/resources/stlib` — bundled standard-library sources (the runtime
   boots the precompiled `klambda/stlib.kl`).
-* `src/test/resources/kernel-tests` — vendored ShenOSKernel 42.2 kernel tests.
+* `src/test/resources/kernel-tests` — vendored ShenOSKernel 43.1 kernel tests.
 * `scripts/` — portable POSIX and Windows launchers.
 
 ## License and acknowledgements

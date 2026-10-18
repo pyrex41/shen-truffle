@@ -31,11 +31,11 @@ public final class ShenRuntime implements AutoCloseable {
     }
 
     /**
-     * ShenOSKernel 42.2 modules. They contain only defuns, so their order is
+     * ShenOSKernel 43.1 modules. They contain only defuns, so their order is
      * irrelevant; {@code shen.initialise} (init.kl) builds the environment,
      * the dict-backed property vector, arities and lambda forms afterwards.
      */
-    static final String[] KERNEL_MODULES = {"sys.kl", "writer.kl", "core.kl", "reader.kl", "declarations.kl",
+    static final String[] KERNEL_MODULES = {"sys.kl", "writer.kl", "core.kl", "reader.kl", "declarations.kl", "compiler.kl",
             "toplevel.kl", "macros.kl", "load.kl", "prolog.kl", "sequent.kl", "track.kl", "t-star.kl", "yacc.kl",
             "types.kl", "dict.kl", "init.kl", "extension-launcher.kl"};
 
@@ -57,7 +57,7 @@ public final class ShenRuntime implements AutoCloseable {
         // The portable pr/2 gates every stream on *hush*.  A launcher must
         // hush only its standard output so -q never discards explicit file IO.
         evalRaw("(defun pr (X Stream) (if (and (value *hush*) (= Stream (value *stoutput*))) X " +
-                "(if (shen.char-stoutput? Stream) (shen.write-string X Stream) " +
+                "(if (char-stream? Stream) (write-string X Stream) " +
                 "(shen.write-chars X Stream (shen.string->byte X 0) 1))))", "<port-overrides>");
         // The kernel's symbol? parses (str X); only host symbols may qualify,
         // otherwise an anonymous function (printed <function>) is a symbol.
@@ -91,7 +91,7 @@ public final class ShenRuntime implements AutoCloseable {
         evalRaw(b.toString(), "<configure-argv>");
     }
     private void loadBundledLibrary() {
-        // ShenOSKernel 42.2 ships the standard library precompiled as
+        // ShenOSKernel 43.1 ships the standard library precompiled as
         // klambda/stlib.kl; stlib.initialise installs its packages, arities,
         // lambda forms, macros, datatypes and types (doc/port-upgrades.md 41.1).
         try {
