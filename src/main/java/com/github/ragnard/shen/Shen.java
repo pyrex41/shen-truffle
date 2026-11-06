@@ -1,8 +1,6 @@
 package com.github.ragnard.shen;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 
 /** Command-line entry point for Shen (ShenOSKernel 43.2). */
@@ -66,15 +64,8 @@ public final class Shen {
         return did ? 0 : repl(rt);
     }
 
-    private static int repl(ShenRuntime rt) throws IOException {
-        // A host-side loop gives a deterministic clean EOF for pipes and scripts.
-        BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-        String line;
-        while ((line = r.readLine()) != null) {
-            if (line.trim().isEmpty()) continue;
-            System.out.println(rt.evalToString(line));
-        }
-        return 0;
+    private static int repl(ShenRuntime rt) {
+        return rt.repl();
     }
 
     private static int error(String s) { System.err.println("ERROR: " + s); return 1; }

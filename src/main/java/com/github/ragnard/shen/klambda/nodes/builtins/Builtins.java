@@ -10,6 +10,9 @@ public class Builtins {
 
     public static NodeFactory[] NODE_FACTORIES = new NodeFactory[] {
 
+            // host
+            com.github.ragnard.shen.klambda.nodes.builtins.host.ExitFactory.getInstance(),
+
             // symbol
             com.github.ragnard.shen.klambda.nodes.builtins.symbol.InternFactory.getInstance(),
             com.github.ragnard.shen.klambda.nodes.builtins.symbol.PredicateFactory.getInstance(),

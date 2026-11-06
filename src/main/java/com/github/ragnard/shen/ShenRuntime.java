@@ -2,6 +2,7 @@ package com.github.ragnard.shen;
 
 import com.github.ragnard.shen.klambda.Language;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
@@ -68,6 +69,28 @@ public final class ShenRuntime implements AutoCloseable {
         // hash agrees with = and dict lookups (get/put) find them.
         evalRaw("(defun hash (X Bound) (let H (shen.mod (shen.hashkey (shen.truffle.normalise-number X)) Bound) " +
                 "(if (= H 0) 1 H)))", "<port-overrides>");
+    }
+
+    /**
+     * Runs the kernel REPL. Only the REPL's own read checks for end of input,
+     * on the first byte of a line: it prints a newline and exits with status 0.
+     * A program evaluated at the REPL which reads (stinput) sees ordinary EOF.
+     */
+    public int repl() {
+        evalRaw("(defun shen.read-evaluate-print () (let Package (value shen.*package*) " +
+                "(let Lineread (shen.package-user-input Package (shen.truffle.repl-read (stinput))) " +
+                "(let History (shen.update-history) (shen.evaluate-lineread Lineread History (value shen.*tc*))))))",
+                "<repl>");
+        evalRaw("(defun shen.truffle.repl-read (Stream) (let Byte (shen.my-read-byte Stream) " +
+                "(if (= Byte -1) (do (nl 1) (shen.truffle.exit 0)) " +
+                "(shen.read-loop Stream Byte () (lambda X (shen.return? X))))))", "<repl>");
+        try {
+            evalRaw("(shen.loop)", "<repl>");
+            return 0;
+        } catch (PolyglotException e) {
+            if (e.isExit()) return e.getExitStatus();
+            throw e;
+        }
     }
 
     /**
