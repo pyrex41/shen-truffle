@@ -31,7 +31,7 @@ public final class ShenRuntime implements AutoCloseable {
     }
 
     /**
-     * ShenOSKernel 43.1 modules. They contain only defuns, so their order is
+     * ShenOSKernel 43.2 modules. They contain only defuns, so their order is
      * irrelevant; {@code shen.initialise} (init.kl) builds the environment,
      * the dict-backed property vector, arities and lambda forms afterwards.
      */
@@ -91,7 +91,7 @@ public final class ShenRuntime implements AutoCloseable {
         evalRaw(b.toString(), "<configure-argv>");
     }
     private void loadBundledLibrary() {
-        // ShenOSKernel 43.1 ships the standard library precompiled as
+        // ShenOSKernel 43.2 ships the standard library precompiled as
         // klambda/stlib.kl; stlib.initialise installs its packages, arities,
         // lambda forms, macros, datatypes and types (doc/port-upgrades.md 41.1).
         try {

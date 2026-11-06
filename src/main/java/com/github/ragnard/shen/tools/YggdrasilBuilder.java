@@ -15,8 +15,8 @@ import java.util.*;
 public final class YggdrasilBuilder {
     /** Tarver Shen 42.0 distribution emitted by Yggdrasil stage 1 before its 43.1 upgrade. */
     private static final String LEGACY_KERNEL_VERSION = "42-s42.20260825";
-    /** ShenOSKernel 43.1 slices; any "43.1..." identity is accepted. */
-    private static final String KERNEL_VERSION = "43.1";
+    /** ShenOSKernel 43.2 slices; any "43.2..." identity is accepted. */
+    private static final String KERNEL_VERSION = "43.2";
 
     /** The packager is kernel-agnostic; it only refuses slices from unrelated kernel lines. */
     static boolean supportedKernelVersion(String v) {
