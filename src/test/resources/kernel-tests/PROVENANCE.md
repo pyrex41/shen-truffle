@@ -1,7 +1,7 @@
-# ShenOSKernel 43.2 kernel tests
+# ShenOSKernel 43.4 kernel tests
 
-Vendored byte-for-byte from the `tests/` directory of the ShenOSKernel 43.2
-release (`Shen-Language/shen-sources`, tag `shen-43.2`, tag object `7b7563e5`,
-commit `e6947f507ebc`; release archive SHA-256
-`23c71508f0de24785e1f127ea4fab440081904d81c463090bc642ee840417f32`).
+Vendored byte-for-byte from the `tests/` directory of the ShenOSKernel 43.4
+release (`Shen-Language/shen-sources`, tag `shen-43.4`, tag object `40fd335893cf`,
+commit `f34b307b490880eedcfe1f5e5d3cc24ca3d2602e`; release archive SHA-256
+`15e7972e6bf0cd65d37c2eba85750b8839d2dbadda41027eae0c88e5017a2756`).
 `runme.shen` is the canonical kernel certification corpus.
