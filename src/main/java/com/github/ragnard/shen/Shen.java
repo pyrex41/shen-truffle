@@ -3,7 +3,7 @@ package com.github.ragnard.shen;
 import java.io.IOException;
 import java.nio.file.Path;
 
-/** Command-line entry point for Shen (ShenOSKernel 43.2). */
+/** Command-line entry point for Shen (ShenOSKernel 43.4). */
 public final class Shen {
     private final ShenRuntime embedded;
     public Shen() { embedded = ShenRuntime.builder().build(); }
@@ -70,7 +70,7 @@ public final class Shen {
 
     private static int error(String s) { System.err.println("ERROR: " + s); return 1; }
     private static void version() {
-        System.out.println("Shen 43.2 (shen-truffle, GraalVM " + System.getProperty("java.vm.version") + ")");
+        System.out.println("Shen 43.4 (shen-truffle, GraalVM " + System.getProperty("java.vm.version") + ")");
     }
     private static void usage() {
         System.out.println("Usage: shen-truffle [--help|--version] [repl|script FILE [ARGS...]|eval OPTIONS]");
